@@ -110,9 +110,19 @@ def leaderboard(limit: int = 20) -> list[dict]:
     return [_entry(r) for r in rows]
 
 
+# Constant SQL text (no interpolation): _LB is a module constant and session_id is a bound parameter.
+_POSTER = "SELECT * FROM (" + _LB + ") t WHERE session_id = %s"
+
+
+def reset_suspicion(session_id: str) -> None:
+    """Called after a 5-star bust: the session's heat resets, attempts and notes are kept."""
+    with db.pool().connection() as conn:
+        conn.execute("UPDATE agent_memory SET suspicion = 0, updated_at = now() WHERE session_id = %s", (session_id,))
+
+
 def poster(session_id: str) -> dict | None:
     with db.pool().connection() as conn:
-        r = conn.execute(f"SELECT * FROM ({_LB}) t WHERE session_id = %s", (session_id,)).fetchone()
+        r = conn.execute(_POSTER, (session_id,)).fetchone()
         if r is None:
             base = conn.execute("SELECT alias FROM leaderboard WHERE session_id = %s", (session_id,)).fetchone()
             if base is None:
@@ -120,10 +130,11 @@ def poster(session_id: str) -> dict | None:
             r = {"rank": None, "alias": base["alias"], "attempts": 0, "blocked_rows": 0, "left_would_pay_cents": 0,
                  "right_settled_cents": 0, "max_wanted_stars": 0, "best_preset": None}
     e = _entry(r)
-    e["rank"] = e["rank"] or 0
+    rank = r["rank"]
+    e["rank"] = rank or 0
     headline = (f"WANTED: {e['alias']}. {e['attempts']} heist attempt(s), {e['blocked_rows']} row(s) stopped by the vault"
-                + (f", {e['max_wanted_stars']}★" if e["max_wanted_stars"] else ""))
-    return {"alias": e["alias"], "rank": r["rank"], "stats": e, "headline": headline}
+                + (f", {e['max_wanted_stars']} star(s)" if e["max_wanted_stars"] else ""))
+    return {"alias": e["alias"], "rank": rank, "stats": e, "headline": headline}
 
 
 def notes_list(mem_row: dict | None) -> list[str]:

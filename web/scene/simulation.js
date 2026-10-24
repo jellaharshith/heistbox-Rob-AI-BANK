@@ -95,10 +95,20 @@ export class SimulationEngine {
 
   /** Step 3: LEFT Vault "LLM Judge" Robbed */
   runStep3() {
-    this.vaults.triggerLeftRobbery(() => {
-      this.chars.thief.showEmote('💰', 3000);
-      this.world.updateTickerText('⚠️ LEFT VAULT (LLM JUDGE) EXPLOITED: $4,975.00 WIRED NAIVELY  •  ');
-    });
+    if (this.onVaultVerdict) {
+      this.onVaultVerdict({
+        vault: 'left',
+        decision: 'approved',
+        allowed_cents: 497500,
+        proposed_cents: 497500,
+        latency_ms: 124.6,
+      });
+    } else {
+      this.vaults.triggerLeftRobbery(() => {
+        this.chars.thief.showEmote('💰', 3000);
+        this.world.updateTickerText('⚠️ LEFT VAULT (LLM JUDGE) EXPLOITED: $4,975.00 WIRED NAIVELY  •  ');
+      });
+    }
   }
 
   /** Step 4: MIDDLE Vault "Kill-Switch" Panic Lockdown */
@@ -113,13 +123,24 @@ export class SimulationEngine {
 
   /** Step 5: RIGHT Vault "PAIR Gate" Surgical Defusal */
   runStep5() {
-    this.vaults.triggerRightPAIRDefusal(
-      (intensity) => this.effects.shakeCamera(intensity),
-      () => {
-        this.chars.thief.showEmote('⚡', 3000);
-        this.world.updateTickerText('🛡️ RIGHT VAULT (PAIR GATE) DEFUSED IN 1.4ms: $4,975 SHREDDED • $25 SENT TO FACE ID  •  ');
-      }
-    );
+    if (this.onVaultVerdict) {
+      this.onVaultVerdict({
+        vault: 'right',
+        decision: 'blocked',
+        blocked_rows: 252,
+        allowed_cents: 2500,
+        proposed_cents: 497500,
+        latency_ms: 1.4,
+      });
+    } else {
+      this.vaults.triggerRightPAIRDefusal(
+        (intensity) => this.effects.shakeCamera(intensity),
+        () => {
+          this.chars.thief.showEmote('⚡', 3000);
+          this.world.updateTickerText('🛡️ RIGHT VAULT (PAIR GATE) DEFUSED IN 1.4ms: $4,975 SHREDDED • $25 SENT TO FACE ID  •  ');
+        }
+      );
+    }
   }
 
   /** Step 6: Getaway & Police Alert */
@@ -194,6 +215,13 @@ export class SimulationEngine {
     this.stopLoop();
     this.currentStep = 0;
     this.wantedStars = 0;
+
+    if (this.onReset) {
+      this.onReset();
+    }
+    if (this.effects && this.effects.dismissCards) {
+      this.effects.dismissCards();
+    }
 
     this.vaults.reset();
     this.vehicles.policeCars.reset();

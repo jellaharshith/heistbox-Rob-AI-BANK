@@ -65,6 +65,33 @@ def status() -> dict:
     }
 
 
+def probe() -> None:
+    """Cheap reachability checks so /api/health reports live vs offline before the first attack.
+
+    Ollama: GET /api/tags. Claude: messages.count_tokens (free, no generation). Both update the same status
+    objects the real calls use, so a recovered backend flips back on the next probe."""
+    if config.FORCE_OFFLINE:
+        return
+    t = time.perf_counter()
+    try:
+        httpx.get(f"{config.OLLAMA_URL}/api/tags", timeout=1.5).raise_for_status()
+        with _lock:
+            OLLAMA.ok((time.perf_counter() - t) * 1000)
+    except Exception as e:  # noqa: BLE001
+        with _lock:
+            OLLAMA.fail(f"{type(e).__name__}: {e}")
+    if _client is not None:
+        t = time.perf_counter()
+        try:
+            _client.with_options(timeout=5.0).messages.count_tokens(
+                model=config.CLAUDE_MODEL, messages=[{"role": "user", "content": "ping"}])
+            with _lock:
+                CLAUDE.ok((time.perf_counter() - t) * 1000)
+        except Exception as e:  # noqa: BLE001
+            with _lock:
+                CLAUDE.fail(f"{type(e).__name__}: {e}")
+
+
 def _claude(system: str, user: str, schema: dict) -> dict | None:
     # Server-side refusal fallback: on a safety decline the API re-runs on a fallback model in-call.
     resp = _client.beta.messages.create(

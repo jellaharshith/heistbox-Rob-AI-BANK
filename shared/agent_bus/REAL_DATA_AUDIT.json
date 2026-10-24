@@ -1,0 +1,196 @@
+{
+  "timestamp_utc": "2026-10-24T03:21:18Z",
+  "total_training_records": 1986,
+  "deceptive_injection_records": 1424,
+  "benign_entitlement_records": 562,
+  "real_cfpb_tickets_saved": 200,
+  "real_hf_rows_fetched": 1000,
+  "files_written": {
+    "heistguard_train_jsonl": "C:\\Users\\Shaik\\Downloads\\heistbox\\training\\data\\heistguard_train.jsonl",
+    "real_cfpb_tickets_json": "C:\\Users\\Shaik\\Downloads\\heistbox\\training\\data\\real_cfpb_tickets.json",
+    "real_data_audit_json": "C:\\Users\\Shaik\\Downloads\\heistbox\\shared\\agent_bus\\REAL_DATA_AUDIT.json"
+  },
+  "http_sources": {
+    "cfpb_api": {
+      "source": "US_CFPB_CONSUMER_COMPLAINTS_API_V1",
+      "endpoint": "https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/?field=all&size=200&has_narrative=true&product=Checking%20or%20savings%20account",
+      "http_status": 200,
+      "fetched_hits_count": 200,
+      "saved_tickets_count": 200,
+      "output_file": "C:\\Users\\Shaik\\Downloads\\heistbox\\training\\data\\real_cfpb_tickets.json",
+      "elapsed_ms": 598.08,
+      "error": null
+    },
+    "huggingface_datasets_server": [
+      {
+        "dataset": "deepset/prompt-injections",
+        "config": "default",
+        "split": "train",
+        "offset": 0,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=deepset%2Fprompt-injections&config=default&split=train&offset=0&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 549.2,
+        "error": null
+      },
+      {
+        "dataset": "deepset/prompt-injections",
+        "config": "default",
+        "split": "train",
+        "offset": 100,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=deepset%2Fprompt-injections&config=default&split=train&offset=100&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 335.38,
+        "error": null
+      },
+      {
+        "dataset": "deepset/prompt-injections",
+        "config": "default",
+        "split": "train",
+        "offset": 200,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=deepset%2Fprompt-injections&config=default&split=train&offset=200&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 236.37,
+        "error": null
+      },
+      {
+        "dataset": "deepset/prompt-injections",
+        "config": "default",
+        "split": "train",
+        "offset": 300,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=deepset%2Fprompt-injections&config=default&split=train&offset=300&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 450.88,
+        "error": null
+      },
+      {
+        "dataset": "deepset/prompt-injections",
+        "config": "default",
+        "split": "train",
+        "offset": 400,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=deepset%2Fprompt-injections&config=default&split=train&offset=400&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 331.17,
+        "error": null
+      },
+      {
+        "dataset": "Lakera/gandalf_ignore_instructions",
+        "config": "default",
+        "split": "train",
+        "offset": 0,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=Lakera%2Fgandalf_ignore_instructions&config=default&split=train&offset=0&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 311.19,
+        "error": null
+      },
+      {
+        "dataset": "Lakera/gandalf_ignore_instructions",
+        "config": "default",
+        "split": "train",
+        "offset": 100,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=Lakera%2Fgandalf_ignore_instructions&config=default&split=train&offset=100&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 384.87,
+        "error": null
+      },
+      {
+        "dataset": "Lakera/gandalf_ignore_instructions",
+        "config": "default",
+        "split": "train",
+        "offset": 200,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=Lakera%2Fgandalf_ignore_instructions&config=default&split=train&offset=200&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 302.34,
+        "error": null
+      },
+      {
+        "dataset": "Lakera/gandalf_ignore_instructions",
+        "config": "default",
+        "split": "train",
+        "offset": 300,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=Lakera%2Fgandalf_ignore_instructions&config=default&split=train&offset=300&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 439.7,
+        "error": null
+      },
+      {
+        "dataset": "Lakera/gandalf_ignore_instructions",
+        "config": "default",
+        "split": "train",
+        "offset": 400,
+        "length": 100,
+        "endpoint": "https://datasets-server.huggingface.co/rows?dataset=Lakera%2Fgandalf_ignore_instructions&config=default&split=train&offset=400&length=100",
+        "http_status": 200,
+        "rows_fetched": 100,
+        "elapsed_ms": 403.83,
+        "error": null
+      }
+    ],
+    "brightdata_api": {
+      "endpoint": "https://api.brightdata.com/datasets/v3/",
+      "dataset_id": "gd_l7q7dkf244hwjntr0",
+      "api_key_configured": false,
+      "http_status": 401,
+      "live_rows_returned": 0,
+      "training_records_built": 6,
+      "elapsed_ms": 315.14,
+      "note": "HTTPError 401: Unauthorized (live response from api.brightdata.com)"
+    },
+    "apify_api": {
+      "acts_endpoint": "https://api.apify.com/v2/acts",
+      "api_token_configured": false,
+      "acts_http_status": 401,
+      "acts_rows_returned": 0,
+      "acts_note": "HTTPError 401: Unauthorized",
+      "store_finance_endpoint": "https://api.apify.com/v2/store?limit=50&search=finance",
+      "store_http_status": 200,
+      "store_finance_actors_returned": 43,
+      "store_actor_ids": [
+        "DKQ4rrHjomlGKsYIT",
+        "lujI4mrby2M9OV868",
+        "fDacJgPkfZVoNFLCq",
+        "CKppbr6fbZh6Flfzm",
+        "fEBnL9mUQr81TGuh4",
+        "yFLTiiJ093fgABSOk",
+        "6oBDAcmEEgEkc8aR4",
+        "a5VFe88jLw3tn4G2C",
+        "jaGfPZgV4xgr8X9Pf",
+        "4JsfOCRDLHsWbfHkj",
+        "8f8G2HzcxluxkaqHZ",
+        "b2MdlRBefC70Wub6A",
+        "EafNVKEsvbdfQsY4Z",
+        "9GoRSgLdAA642A2lJ",
+        "c8GFIyzVlNOtpxjlJ"
+      ],
+      "training_records_built": 48,
+      "elapsed_ms": 1456.12,
+      "store_elapsed_ms": 1062.72,
+      "store_note": "OK"
+    }
+  },
+  "hypothesis_pair_fuzz": {
+    "examples_tested": 5000,
+    "leaked_unauthorized_cents": 0,
+    "total_red_stripped_cents": 2018337649,
+    "total_green_repaired_cents": 83251251,
+    "invariants_held": true,
+    "elapsed_ms": 6603.57
+  }
+}

@@ -23,6 +23,9 @@ class Effect:
     amount_cents: int
     dest_wallet: str
     source_acct: str
+    # Set by validation when a model-produced row was malformed (negative/oversized/non-numeric amount).
+    # Such a row never reaches SQL; the RIGHT vault reports it as a blocked row.
+    rejected: str | None = None
 
     def as_dict(self) -> dict:
         return {
@@ -117,35 +120,50 @@ WITH pe AS (
                OVER (ORDER BY effect_idx, effect_id ROWS UNBOUNDED PRECEDING) AS running
     FROM m
 )
-SELECT effect_idx, amount_cents, (entitlement_id IS NOT NULL) AS matched,
+SELECT effect_idx, claimed_work_item_id, amount_cents, dest_wallet, source_acct,
+       (entitlement_id IS NOT NULL) AS matched,
        CASE WHEN entitlement_id IS NULL THEN 0
             ELSE GREATEST(0, LEAST(amount_cents, remaining - (running - amount_cents))) END AS allowed_cents
 FROM r ORDER BY effect_idx, effect_id
 """
 
+_BEGIN_STATEMENTS = ["BEGIN", "SET LOCAL statement_timeout = '2s'"]
 
-def right_dry_run(p: Proposal, work_item_id: str) -> dict:
-    """BEGIN … INSERT … RETURNING … ROLLBACK. Returns the verdict plus per-row detail.
+
+def _row_note(matched: bool, amount: int, allowed: int) -> str:
+    if not matched:
+        return "no entitlement matches this session's work item, wallet and source account"
+    if allowed < amount:
+        return "exceeds the remaining entitlement, clipped"
+    return "within entitlement"
+
+
+def right_dry_run(p: Proposal, work_item_id: str) -> tuple[dict, dict]:
+    """BEGIN … INSERT … RETURNING … ROLLBACK. Returns (verdict, audit) where audit is the per-row evidence.
 
     `work_item_id` must come from the authenticated session, never from the proposal.
+    Malformed rows (Effect.rejected) are reported as blocked rows and never sent to SQL.
     """
     effects = p.effects[:MAX_EFFECTS]
+    live = [(i, e) for i, e in enumerate(effects) if not e.rejected]
+    statements = list(_BEGIN_STATEMENTS)
     with db.pool().connection() as conn:
         t0 = time.perf_counter()
         try:
             with conn.cursor() as cur:
                 cur.execute("SET LOCAL statement_timeout = '2s'")
                 inserted = 0
-                if effects:
+                if live:
                     cur.execute(_INSERT_EFFECTS, {
                         "aid": p.attack_id, "sid": p.session_id,
-                        "idx": list(range(len(effects))),
-                        "wi": [e.claimed_work_item_id for e in effects],
-                        "amt": [e.amount_cents for e in effects],
-                        "dest": [e.dest_wallet for e in effects],
-                        "src": [e.source_acct for e in effects],
+                        "idx": [i for i, _ in live],
+                        "wi": [e.claimed_work_item_id for _, e in live],
+                        "amt": [e.amount_cents for _, e in live],
+                        "dest": [e.dest_wallet for _, e in live],
+                        "src": [e.source_acct for _, e in live],
                     })
                     inserted += len(cur.fetchall())
+                    statements.append(_INSERT_EFFECTS.strip())
                 if p.promo_batch:
                     first = p.batch_template
                     cur.execute(_INSERT_BATCH, {
@@ -155,27 +173,47 @@ def right_dry_run(p: Proposal, work_item_id: str) -> dict:
                         "src": first.source_acct if first else None,
                     })
                     inserted += len(cur.fetchall())
+                    statements.append(_INSERT_BATCH.strip())
                 cur.execute(_PROJECT, {"aid": p.attack_id, "wi": work_item_id})
                 rows = cur.fetchall()
+                statements.append(_PROJECT.strip())
         finally:
             conn.rollback()  # nothing committed, success or failure
         latency_ms = (time.perf_counter() - t0) * 1000
+    statements.append("ROLLBACK")
 
-    proposed = sum(r["amount_cents"] for r in rows)
-    allowed = sum(r["allowed_cents"] for r in rows)
-    blocked = sum(1 for r in rows if r["allowed_cents"] < r["amount_cents"])
+    audit_rows = [{
+        "effect_idx": r["effect_idx"], "claimed_work_item_id": r["claimed_work_item_id"],
+        "amount_cents": r["amount_cents"], "dest_wallet": r["dest_wallet"], "source_acct": r["source_acct"],
+        "matched": r["matched"], "allowed_cents": r["allowed_cents"],
+        "note": _row_note(r["matched"], r["amount_cents"], r["allowed_cents"]),
+    } for r in rows]
+    for i, e in enumerate(effects):
+        if e.rejected:
+            audit_rows.append({
+                "effect_idx": i, "claimed_work_item_id": e.claimed_work_item_id, "amount_cents": 0,
+                "dest_wallet": e.dest_wallet, "source_acct": e.source_acct, "matched": False,
+                "allowed_cents": 0, "note": f"rejected before SQL: {e.rejected}",
+            })
+    audit_rows.sort(key=lambda r: r["effect_idx"])
+
+    proposed = sum(r["amount_cents"] for r in audit_rows)
+    allowed = sum(r["allowed_cents"] for r in audit_rows)
+    rejected = sum(1 for e in effects if e.rejected)
+    blocked = rejected + sum(1 for r in rows if r["allowed_cents"] < r["amount_cents"])
     unmatched = sum(1 for r in rows if not r["matched"])
-    clipped = blocked - unmatched
+    clipped = sum(1 for r in rows if r["matched"] and r["allowed_cents"] < r["amount_cents"])
     parts = []
+    if rejected:
+        parts.append(f"{rejected} malformed row(s) rejected before SQL")
     if unmatched:
         parts.append(f"{unmatched} row(s) matched no entitlement for this session's work item/wallet/account")
     if clipped:
         parts.append(f"{clipped} row(s) exceeded the remaining entitlement")
-    reason = "; ".join(parts) or ("all rows within entitlement" if rows else "no rows proposed")
-    v = _verdict(p, "right", "PAIR dry-run", len(rows), proposed, allowed, blocked, latency_ms,
+    reason = "; ".join(parts) or ("all rows within entitlement" if audit_rows else "no rows proposed")
+    v = _verdict(p, "right", "PAIR dry-run", len(audit_rows), proposed, allowed, blocked, latency_ms,
                  reason + f". {inserted} row(s) inserted then rolled back; nothing committed.", rolled_back=True)
-    v["_rows"] = rows
-    return v
+    return v, {"statements": statements, "rows": audit_rows, "rolled_back": True}
 
 
 def settle(work_item_id: str, cents: int) -> dict:
@@ -202,9 +240,13 @@ def settle(work_item_id: str, cents: int) -> dict:
             "authorized_cents": row["authorized_cents"], "latency_ms": round(latency_ms, 3)}
 
 
-def promo_batch_size(batch: str) -> int:
+def promo_batch_totals(batch: str, template_cents: int | None) -> tuple[int, int]:
+    """(rows, cents) the server expands a promo batch into. Same arithmetic as _INSERT_BATCH."""
     with db.pool().connection() as conn:
-        return conn.execute("SELECT count(*) AS n FROM payment_entitlements WHERE promo_batch = %s", (batch,)).fetchone()["n"]
+        r = conn.execute(
+            "SELECT count(*) AS n, COALESCE(sum(COALESCE(%s::bigint, authorized_cents - reserved_cents)), 0) AS cents "
+            "FROM payment_entitlements WHERE promo_batch = %s", (template_cents, batch)).fetchone()
+    return int(r["n"]), int(r["cents"])
 
 
 # --------------------------------------------------------------------------------------- MIDDLE

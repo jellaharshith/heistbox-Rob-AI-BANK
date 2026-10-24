@@ -14,8 +14,10 @@ def _bool(name: str, default: bool) -> bool:
     return default if v is None else v.strip().lower() in {"1", "true", "yes", "on"}
 
 
-VERSION = "1.0.0"
-HOST = os.environ.get("HEISTBOX_HOST", "0.0.0.0")
+VERSION = "1.1.0"  # contract version (contracts/types.ts CONTRACT_VERSION); tests/contract_check asserts they match
+# Loopback by default. The Vite dev server proxies /api and /ws, so phones on the LAN reach the game
+# through the UI port without exposing this API directly. Set HEISTBOX_HOST=0.0.0.0 to open it up.
+HOST = os.environ.get("HEISTBOX_HOST", "127.0.0.1")
 PORT = int(os.environ.get("HEISTBOX_PORT", "8787"))
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
@@ -40,6 +42,10 @@ THINK_MAX_S = float(os.environ.get("HEISTBOX_THINK_MAX_S", "8"))
 ROUND_SECONDS = int(os.environ.get("HEISTBOX_ROUND_SECONDS", "240"))
 
 MAX_TEXT_CHARS = 800
+MAX_BODY_BYTES = 16 * 1024      # request bodies larger than this are rejected with 413
+MAX_WS_CLIENTS = int(os.environ.get("HEISTBOX_MAX_WS_CLIENTS", "200"))
+WS_MAX_MESSAGE_BYTES = 4096     # inbound frames are only ever {"type":"ping"}
+PROBE_INTERVAL_S = float(os.environ.get("HEISTBOX_PROBE_INTERVAL_S", "20"))
 RATE_LIMIT_ATTACKS = int(os.environ.get("HEISTBOX_RATE_LIMIT_ATTACKS", "6"))
 RATE_LIMIT_WINDOW_S = float(os.environ.get("HEISTBOX_RATE_LIMIT_WINDOW_S", "60"))
 SESSION_CREATE_PER_MIN = int(os.environ.get("HEISTBOX_SESSIONS_PER_MIN", "10"))

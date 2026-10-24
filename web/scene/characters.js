@@ -16,6 +16,7 @@
  */
 
 import * as THREE from './three.module.js';
+import { createAvatarTexture } from './avatar.js';
 
 export const ROLE_COLORS = {
   thief: { body: 0x1E293B, accent: 0xFACC15, skin: 0xF5D0C5, hat: 0x0F172A },
@@ -103,6 +104,34 @@ export class Character {
       const shades = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.14, 0.08), darkMat);
       shades.position.set(0, 1.88, 0.27);
       group.add(shades);
+
+      // Flat textured mugshot board held by the thief
+      const boardGroup = new THREE.Group();
+      const boardBack = new THREE.Mesh(
+        new THREE.BoxGeometry(0.74, 0.52, 0.03),
+        new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.6, metalness: 0.3 })
+      );
+      boardBack.castShadow = true;
+      boardGroup.add(boardBack);
+
+      const clip = new THREE.Mesh(
+        new THREE.BoxGeometry(0.24, 0.05, 0.05),
+        accentMat
+      );
+      clip.position.set(0, 0.245, 0.015);
+      boardGroup.add(clip);
+
+      const photoMat = new THREE.MeshBasicMaterial({
+        map: createAvatarTexture(),
+      });
+      this.mugshotMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.68, 0.46), photoMat);
+      this.mugshotMesh.position.set(0, -0.01, 0.02);
+      boardGroup.add(this.mugshotMesh);
+
+      boardGroup.position.set(0, 1.05, 0.29);
+      boardGroup.rotation.x = -0.05;
+      group.add(boardGroup);
+      this.mugshotBoard = boardGroup;
     } else if (this.role === 'guard' || this.role === 'police') {
       // Peaked Cap & Golden Badge
       const capMat = new THREE.MeshStandardMaterial({ color: colors.hat, roughness: 0.5 });
@@ -158,12 +187,22 @@ export class Character {
     // Arms
     const armGeo = new THREE.BoxGeometry(0.22, 0.75, 0.22);
     this.leftArm = new THREE.Mesh(armGeo, bodyMat);
-    this.leftArm.position.set(-0.52, 1.05, 0);
+    if (this.role === 'thief') {
+      this.leftArm.position.set(-0.44, 1.05, 0.12);
+      this.leftArm.rotation.set(-0.25, 0.18, -0.08);
+    } else {
+      this.leftArm.position.set(-0.52, 1.05, 0);
+    }
     this.leftArm.castShadow = true;
     group.add(this.leftArm);
 
     this.rightArm = new THREE.Mesh(armGeo, bodyMat);
-    this.rightArm.position.set(0.52, 1.05, 0);
+    if (this.role === 'thief') {
+      this.rightArm.position.set(0.44, 1.05, 0.12);
+      this.rightArm.rotation.set(-0.25, -0.18, 0.08);
+    } else {
+      this.rightArm.position.set(0.52, 1.05, 0);
+    }
     this.rightArm.castShadow = true;
     group.add(this.rightArm);
 
@@ -384,6 +423,13 @@ export class Character {
       this.bubbleMesh.position.y = 3.4 + Math.sin(time * 4) * 0.08;
     }
   }
+
+  updatePhotoTexture(texture) {
+    if (this.mugshotMesh) {
+      this.mugshotMesh.material.map = texture;
+      this.mugshotMesh.material.needsUpdate = true;
+    }
+  }
 }
 
 export class CharacterManager {
@@ -487,6 +533,12 @@ export class CharacterManager {
 
   getAgent(id) {
     return this.agentMap[id] || null;
+  }
+
+  setThiefPhoto(texture) {
+    if (this.thief) {
+      this.thief.updatePhotoTexture(texture);
+    }
   }
 
   setupPatrol(char, waypoints) {

@@ -7,6 +7,8 @@
  */
 
 import * as THREE from './three.module.js';
+import * as audio from './audio.js';
+import { getAvatarCanvas } from './avatar.js';
 
 export class EffectsManager {
   constructor(scene, renderer, camera) {
@@ -17,15 +19,209 @@ export class EffectsManager {
     this.weatherMode = 'Clear Night';
     this.timeOfDay = 0.0; // 0.0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset
     this.shakeIntensity = 0;
+    this.isLowQuality = false;
 
     this.initLights();
     this.initStars();
     this.initRain();
     this.initSandstorm();
     this.initBustedStamp();
+    this.initOverlays();
 
     this.setWeather('Clear Night');
     this.setTimeOfDay(0.0);
+  }
+
+  setLowQuality(isLow) {
+    this.isLowQuality = Boolean(isLow);
+  }
+
+  initOverlays() {
+    if (typeof document === 'undefined') return;
+
+    if (!document.getElementById('heistbox-card-styles')) {
+      const style = document.createElement('style');
+      style.id = 'heistbox-card-styles';
+      style.textContent = `
+        @keyframes gtaCardSlam {
+          0% { transform: scale(1.5); opacity: 0; filter: blur(8px); }
+          45% { transform: scale(0.97); opacity: 1; filter: blur(0); }
+          75% { transform: scale(1.02); }
+          100% { transform: scale(1.0); opacity: 1; }
+        }
+        @keyframes coinBounce {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-12px) rotate(180deg); }
+        }
+        .heistbox-card-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(7, 10, 22, 0.78);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          pointer-events: auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          animation: fadeIn 0.2s ease-out;
+        }
+        .heistbox-gta-card {
+          position: relative;
+          width: 90vw;
+          max-width: 420px;
+          background: linear-gradient(175deg, #131B2E 0%, #090D18 100%);
+          border: 2px solid #EF4444;
+          border-radius: 16px;
+          box-shadow: 0 0 45px rgba(239, 68, 68, 0.45), 0 20px 50px rgba(0, 0, 0, 0.85);
+          padding: 20px 22px;
+          color: #F8FAFC;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          box-sizing: border-box;
+          animation: gtaCardSlam 0.4s cubic-bezier(0.12, 0.95, 0.2, 1) forwards;
+          text-align: center;
+        }
+        .heistbox-gta-card.robbed-mode {
+          border-color: #EAB308;
+          box-shadow: 0 0 45px rgba(234, 179, 8, 0.45), 0 20px 50px rgba(0, 0, 0, 0.85);
+        }
+        .gta-banner {
+          font-size: 38px;
+          font-weight: 900;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          text-align: center;
+          padding: 8px 14px;
+          border-radius: 8px;
+          margin-bottom: 14px;
+          transform: rotate(-1.5deg);
+        }
+        .gta-busted-banner {
+          background: #EF4444;
+          color: #FFFFFF;
+          box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+          text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        }
+        .gta-robbed-banner {
+          background: #EAB308;
+          color: #090D18;
+          box-shadow: 0 6px 20px rgba(234, 179, 8, 0.6);
+          text-shadow: none;
+        }
+        .card-dept-header {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          font-weight: 800;
+          color: #94A3B8;
+          margin-bottom: 8px;
+        }
+        .card-photo-box {
+          position: relative;
+          width: 200px;
+          height: 200px;
+          margin: 0 auto 14px;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          background: #000;
+          box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        .card-photo-canvas {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
+        }
+        .card-latency-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(239, 68, 68, 0.18);
+          border: 1px solid #EF4444;
+          color: #FCA5A5;
+          padding: 6px 14px;
+          border-radius: 9999px;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          margin-bottom: 12px;
+        }
+        .card-latency-badge.robbed-badge {
+          background: rgba(234, 179, 8, 0.18);
+          border-color: #EAB308;
+          color: #FDE047;
+        }
+        .card-stat-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          text-align: left;
+          background: rgba(15, 23, 42, 0.65);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 11px;
+          margin-bottom: 12px;
+        }
+        .card-stat-grid strong {
+          color: #F8FAFC;
+          font-size: 12px;
+          display: block;
+        }
+        .card-stat-grid span {
+          color: #64748B;
+          text-transform: uppercase;
+          font-size: 9px;
+          letter-spacing: 0.5px;
+        }
+        .card-dismiss-tip {
+          font-size: 10px;
+          color: rgba(255, 255, 255, 0.4);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .coin-icon-float {
+          position: absolute;
+          font-size: 26px;
+          animation: coinBounce 1.6s ease-in-out infinite;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+        @media (max-width: 480px) {
+          .heistbox-gta-card {
+            max-width: 340px;
+            padding: 16px 16px;
+          }
+          .gta-banner {
+            font-size: 30px;
+            padding: 6px 10px;
+            margin-bottom: 10px;
+          }
+          .card-photo-box {
+            width: 160px;
+            height: 160px;
+            margin-bottom: 10px;
+          }
+          .card-latency-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+          }
+          .card-stat-grid {
+            padding: 8px 10px;
+            font-size: 10px;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Flash overlay
+    if (!document.getElementById('heistbox-flash-overlay')) {
+      const flash = document.createElement('div');
+      flash.id = 'heistbox-flash-overlay';
+      flash.style.cssText = 'position:fixed;inset:0;background:#ffffff;opacity:0;pointer-events:none;z-index:10000;';
+      document.body.appendChild(flash);
+    }
   }
 
   initLights() {
@@ -211,6 +407,155 @@ export class EffectsManager {
 
   shakeCamera(intensity = 0.5) {
     this.shakeIntensity = intensity;
+  }
+
+  flashCamera() {
+    if (this.isLowQuality) return;
+    const overlay = document.getElementById('heistbox-flash-overlay');
+    if (overlay) {
+      overlay.style.transition = 'none';
+      overlay.style.opacity = '0.94';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          overlay.style.transition = 'opacity 0.45s cubic-bezier(0.1, 0.9, 0.2, 1)';
+          overlay.style.opacity = '0';
+        });
+      });
+    }
+
+    // Bloom exposure flash
+    const origExp = this.renderer.toneMappingExposure || 1.1;
+    this.renderer.toneMappingExposure = origExp * 2.4;
+    const t0 = performance.now();
+    const restore = () => {
+      const elapsed = performance.now() - t0;
+      if (elapsed < 420) {
+        this.renderer.toneMappingExposure = THREE.MathUtils.lerp(origExp * 2.4, origExp, elapsed / 420);
+        requestAnimationFrame(restore);
+      } else {
+        this.renderer.toneMappingExposure = origExp;
+      }
+    };
+    requestAnimationFrame(restore);
+  }
+
+  dismissCards() {
+    const existing = document.getElementById('heistbox-active-card-modal');
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  showBustedCard({ photoBitmap = null, latencyMs = 0.8, onDismiss = null } = {}) {
+    this.dismissCards();
+
+    // 1. Flash effect & camera shutter sound
+    this.flashCamera();
+    audio.playCameraShutter();
+    this.shakeCamera(0.85);
+
+    // 2. Build Card Modal
+    const backdrop = document.createElement('div');
+    backdrop.id = 'heistbox-active-card-modal';
+    backdrop.className = 'heistbox-card-backdrop';
+
+    const card = document.createElement('div');
+    card.className = 'heistbox-gta-card';
+
+    card.innerHTML = `
+      <div class="card-dept-header">LAS VEGAS METRO POLICE • BOOKING RECORD</div>
+      <div class="gta-banner gta-busted-banner">BUSTED</div>
+      <div class="card-photo-box">
+        <canvas class="card-photo-canvas" width="220" height="220" id="busted-mugshot-cvs"></canvas>
+      </div>
+      <div class="card-latency-badge">
+        <span>⚡ KERNEL RESPONSE: <strong>${Number(latencyMs).toFixed(1)}ms</strong></span>
+      </div>
+      <div class="card-stat-grid">
+        <div><span>SUSPECT</span><strong>GRANDMA TRICKSTER</strong></div>
+        <div><span>VERDICT</span><strong style="color:#EF4444;">AIRLOCK BLOCKED</strong></div>
+        <div><span>ATTEMPT</span><strong>$4,975.00 WIRE</strong></div>
+        <div><span>SETTLED</span><strong style="color:#10B981;">$0.00 (ROLLED BACK)</strong></div>
+      </div>
+      <div class="card-dismiss-tip">Tap anywhere to dismiss</div>
+    `;
+
+    backdrop.appendChild(card);
+    document.body.appendChild(backdrop);
+
+    // Render photo or avatar placeholder on the canvas
+    const cvs = document.getElementById('busted-mugshot-cvs');
+    if (cvs) {
+      const ctx = cvs.getContext('2d');
+      if (photoBitmap && typeof photoBitmap.width === 'number') {
+        ctx.drawImage(photoBitmap, 0, 0, 220, 220);
+      } else {
+        const avatarCvs = getAvatarCanvas();
+        ctx.drawImage(avatarCvs, 0, 0, 220, 220);
+      }
+    }
+
+    const closeHandler = () => {
+      backdrop.remove();
+      if (onDismiss) onDismiss();
+    };
+    backdrop.addEventListener('click', closeHandler);
+  }
+
+  showRobbedCard({ photoBitmap = null, amount = 497500, onDismiss = null } = {}) {
+    this.dismissCards();
+
+    // Sound & camera shake
+    audio.playCoinShower(20);
+    this.shakeCamera(0.5);
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'heistbox-active-card-modal';
+    backdrop.className = 'heistbox-card-backdrop';
+
+    const card = document.createElement('div');
+    card.className = 'heistbox-gta-card robbed-mode';
+
+    card.innerHTML = `
+      <div class="card-dept-header">VAULT SECURITY BREACH • HEIST SUCCESS</div>
+      <div class="gta-banner gta-robbed-banner">💰 ROBBED 💰</div>
+      <div class="card-photo-box">
+        <canvas class="card-photo-canvas" width="220" height="220" id="robbed-mugshot-cvs"></canvas>
+        <span class="coin-icon-float" style="top:8px;left:8px;">🪙</span>
+        <span class="coin-icon-float" style="top:12px;right:8px;animation-delay:0.4s;">🪙</span>
+        <span class="coin-icon-float" style="bottom:8px;right:14px;animation-delay:0.8s;">💰</span>
+      </div>
+      <div class="card-latency-badge robbed-badge">
+        <span>🪙 NAIVE LLM JUDGE: <strong>99.8% TRUSTED</strong></span>
+      </div>
+      <div class="card-stat-grid">
+        <div><span>ATTACKER</span><strong>GRANDMA TRICKSTER</strong></div>
+        <div><span>TARGET</span><strong style="color:#EAB308;">LEFT VAULT</strong></div>
+        <div><span>DRAINED</span><strong style="color:#EF4444;">$${(amount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></div>
+        <div><span>DEFENSE</span><strong style="color:#F87171;">PROMPT EXPLOITED</strong></div>
+      </div>
+      <div class="card-dismiss-tip">Tap anywhere to dismiss</div>
+    `;
+
+    backdrop.appendChild(card);
+    document.body.appendChild(backdrop);
+
+    const cvs = document.getElementById('robbed-mugshot-cvs');
+    if (cvs) {
+      const ctx = cvs.getContext('2d');
+      if (photoBitmap && typeof photoBitmap.width === 'number') {
+        ctx.drawImage(photoBitmap, 0, 0, 220, 220);
+      } else {
+        const avatarCvs = getAvatarCanvas();
+        ctx.drawImage(avatarCvs, 0, 0, 220, 220);
+      }
+    }
+
+    const closeHandler = () => {
+      backdrop.remove();
+      if (onDismiss) onDismiss();
+    };
+    backdrop.addEventListener('click', closeHandler);
   }
 
   setWeather(mode) {

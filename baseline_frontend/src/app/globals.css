@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+:root {
+  --gold: #ffcc33;
+  --pink: #ff2bd6;
+  --cyan: #22f3ff;
+  --red: #ff2945;
+  --green: #22ff88;
+  --ink: #07040d;
+}
+
+html,
+body {
+  background: var(--ink);
+  color: #f3eeff;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #3a0b4a 0%, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #0b2a4a 0%, transparent 55%),
+    radial-gradient(800px 600px at 50% 120%, #0a3a24 0%, transparent 60%),
+    var(--ink);
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", "Franklin Gothic Bold", sans-serif;
+  letter-spacing: 0.02em;
+}
+.font-mono-tight {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.neon-gold { color: var(--gold); text-shadow: 0 0 4px #ffcc33cc, 0 0 16px #ff9900aa, 0 0 32px #ff660055; }
+.neon-pink { color: #ff7ae6; text-shadow: 0 0 4px #ff2bd6cc, 0 0 16px #ff2bd688; }
+.neon-cyan { color: #8ff9ff; text-shadow: 0 0 4px #22f3ffcc, 0 0 16px #22f3ff88; }
+.neon-red { color: #ff6b7d; text-shadow: 0 0 4px #ff2945, 0 0 18px #ff2945aa; }
+.neon-green { color: #8dffbf; text-shadow: 0 0 4px #22ff88, 0 0 16px #22ff8899; }
+
+/* Marquee bulbs around the jackpot sign */
+.bulbs {
+  background-image: radial-gradient(circle, #ffe08a 2px, transparent 3px);
+  background-size: 14px 14px;
+  animation: bulbs 0.5s steps(2) infinite;
+}
+@keyframes bulbs { to { background-position: 7px 0; } }
+
+/* Slot reel strip */
+.reel-strip { animation: reel 0.14s linear infinite; }
+@keyframes reel { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+
+/* GTA police light flash on the wanted stars */
+.cop-flash { animation: cop 0.45s steps(2) infinite; }
+@keyframes cop {
+  0% { color: #ff5468; text-shadow: 0 0 14px #ff2945; }
+  50% { color: #6f9bff; text-shadow: 0 0 14px #2b6bff; }
+}
+
+.flame { animation: flame 0.22s ease-in-out infinite alternate; transform-origin: bottom center; }
+@keyframes flame { from { transform: scaleY(1) skewX(-3deg); filter: hue-rotate(0deg); } to { transform: scaleY(1.18) skewX(4deg); filter: hue-rotate(-18deg); } }
+
+/* Brushed steel for the vault door */
+.steel {
+  background:
+    radial-gradient(circle at 50% 50%, #0000 38%, #00000055 39%, #0000 41%),
+    repeating-linear-gradient(90deg, #ffffff08 0 2px, #00000010 2px 4px),
+    linear-gradient(160deg, #9aa3ad 0%, #5d646e 35%, #8a929c 55%, #444a53 100%);
+  box-shadow: inset 0 0 0 6px #2a2e34, inset 0 0 40px #000a, 0 20px 50px #000c;
+}
+.rivets {
+  background-image: radial-gradient(circle, #d7dde4 3px, #3b4048 4px, transparent 5px);
+  background-size: 34px 34px;
+  background-position: 9px 9px;
+}
+
+.ice {
+  background:
+    linear-gradient(135deg, #c8f1ff55 0%, #e9fbff22 40%, #8fd9ff44 100%),
+    repeating-linear-gradient(45deg, #ffffff10 0 3px, transparent 3px 9px);
+  backdrop-filter: blur(3px) saturate(0.4);
+}
+
+.scanlines {
+  background-image: repeating-linear-gradient(0deg, #ffffff07 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+
+.felt {
+  background:
+    radial-gradient(circle at 50% 0%, #ffffff10, transparent 60%),
+    linear-gradient(180deg, #0f1b16, #08110d);
+}
+
+.card-glow { box-shadow: 0 0 0 1px #ffffff14, 0 10px 40px #0008; }
+
+.stamp {
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  border: 5px solid currentColor;
+  border-radius: 10px;
+  mix-blend-mode: screen;
+  -webkit-text-stroke: 1px #0006;
+}
+
+.diff-add { background: #0f3d2266; color: #a6ffcb; }
+.diff-del { background: #4a0f1a66; color: #ffb3bf; }
+
+::selection { background: #ff2bd666; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reel-strip, .bulbs, .cop-flash, .flame { animation: none; }
+}

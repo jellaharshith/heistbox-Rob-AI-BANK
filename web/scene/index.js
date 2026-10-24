@@ -13,8 +13,79 @@ import { VaultManager } from './vaults.js';
 import { EffectsManager } from './effects.js';
 import { SceneControls } from './controls.js';
 import { SimulationEngine } from './simulation.js';
+import { createAvatarTexture } from './avatar.js';
 
 export { audio };
+
+let activeSceneInstance = null;
+let currentThiefBitmap = null;
+let currentThiefTexture = null;
+
+/**
+ * Sets the thief photo from an in-memory ImageBitmap or clears it when null.
+ * Shows flat textured mugshot board on thief & framed poster in vault hall.
+ * Disposes previous texture and closes previous bitmap if replaced.
+ * @param {ImageBitmap|null} imageBitmapOrNull
+ */
+export function setThiefPhoto(imageBitmapOrNull) {
+  // Dispose of old texture
+  if (currentThiefTexture) {
+    currentThiefTexture.dispose();
+    currentThiefTexture = null;
+  }
+  // Close old bitmap if replaced
+  if (currentThiefBitmap && currentThiefBitmap !== imageBitmapOrNull) {
+    try {
+      currentThiefBitmap.close?.();
+    } catch {}
+    currentThiefBitmap = null;
+  }
+
+  if (imageBitmapOrNull) {
+    currentThiefBitmap = imageBitmapOrNull;
+    currentThiefTexture = new THREE.Texture(imageBitmapOrNull);
+    currentThiefTexture.needsUpdate = true;
+
+    // Camera-flash white-out effect on capture (skipped in low-quality mode)
+    if (activeSceneInstance && activeSceneInstance.effects) {
+      activeSceneInstance.effects.flashCamera();
+      audio.playCameraShutter();
+    }
+  } else {
+    currentThiefBitmap = null;
+    currentThiefTexture = null;
+  }
+
+  if (activeSceneInstance) {
+    const tex = currentThiefTexture || createAvatarTexture();
+    activeSceneInstance.chars?.setThiefPhoto(tex);
+    activeSceneInstance.world?.setVaultPosterPhoto(tex);
+  }
+}
+
+/**
+ * Disposes of the active photo texture and in-memory ImageBitmap.
+ * Reverts to avatar placeholder.
+ */
+export function clearThiefPhoto() {
+  if (currentThiefTexture) {
+    currentThiefTexture.dispose();
+    currentThiefTexture = null;
+  }
+  if (currentThiefBitmap) {
+    try {
+      currentThiefBitmap.close?.();
+    } catch {}
+    currentThiefBitmap = null;
+  }
+
+  if (activeSceneInstance) {
+    const tex = createAvatarTexture();
+    activeSceneInstance.chars?.setThiefPhoto(tex);
+    activeSceneInstance.world?.setVaultPosterPhoto(tex);
+    activeSceneInstance.effects?.dismissCards();
+  }
+}
 
 /**
  * Mounts the 3D isometric Vegas-style bank campus onto the given canvas element.
@@ -85,14 +156,35 @@ export function mountScene(canvas, store = null) {
   function handleVaultVerdict(v) {
     if (!v) return;
     const vName = v.vault || (v.left_vault_llm_judge ? 'left' : v.center_firewall ? 'middle' : 'right');
+    const decision = v.decision || (v.allowed_cents === 0 ? 'blocked' : 'approved');
+    const latency = typeof v.latency_ms === 'number' ? v.latency_ms : (typeof v.latencyMs === 'number' ? v.latencyMs : 0.8);
+
     if (vName === 'left') {
       vaults.triggerLeftRobbery();
+      // On LEFT robbed: a "ROBBED" card with coins
+      effects.showRobbedCard({
+        photoBitmap: currentThiefBitmap,
+        amount: v.proposed_cents || v.allowed_cents || 497500,
+      });
     } else if (vName === 'middle') {
       vaults.triggerMiddleLockdown();
     } else if (vName === 'right') {
       vaults.triggerRightPAIRDefusal((intensity) => effects.shakeCamera(intensity));
+      // On vault_verdict for the RIGHT vault with decision=blocked:
+      // pop a big GTA "BUSTED" mugshot card (photo + measured latency_ms from the event, never hardcoded)
+      if (decision === 'blocked' || v.blocked_rows > 0) {
+        effects.showBustedCard({
+          photoBitmap: currentThiefBitmap,
+          latencyMs: latency,
+        });
+      }
     }
   }
+
+  simulation.onVaultVerdict = (v) => handleVaultVerdict(v);
+  simulation.onReset = () => {
+    clearThiefPhoto();
+  };
 
   function handleWeather(w) {
     if (!w) return;
@@ -314,6 +406,7 @@ export function mountScene(canvas, store = null) {
     stopLoop: () => simulation.stopLoop(),
     reset: () => simulation.reset(),
     setQuality: (isLow) => {
+      effects.setLowQuality(isLow);
       renderer.shadowMap.enabled = !isLow;
       renderer.setPixelRatio(isLow ? 1.0 : Math.min(window.devicePixelRatio || 1, 2));
       scene.traverse((node) => {
@@ -324,16 +417,48 @@ export function mountScene(canvas, store = null) {
       });
       console.log(`[HeistBox 3D] Quality set to ${isLow ? 'LOW' : 'HIGH'}. Draw calls:`, renderer.info.render.calls);
     },
+    setThiefPhoto: (bitmapOrNull) => setThiefPhoto(bitmapOrNull),
+    clearThiefPhoto: () => clearThiefPhoto(),
+    handleVaultVerdict: (v) => handleVaultVerdict(v),
+    showBustedCard: (opts) => effects.showBustedCard({ photoBitmap: currentThiefBitmap, ...opts }),
+    showRobbedCard: (opts) => effects.showRobbedCard({ photoBitmap: currentThiefBitmap, ...opts }),
     destroy: () => {
       isRunning = false;
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener('resize', onResize);
       renderer.dispose();
+      if (activeSceneInstance && activeSceneInstance.renderer === renderer) {
+        clearThiefPhoto();
+        activeSceneInstance = null;
+      }
     },
     simulation,
     scene,
     camera,
     renderer,
   };
+
+  activeSceneInstance = {
+    scene,
+    camera,
+    renderer,
+    controls,
+    world,
+    chars,
+    vaults,
+    vehicles,
+    effects,
+    simulation,
+    audio,
+    setThiefPhoto: (b) => setThiefPhoto(b),
+    clearThiefPhoto: () => clearThiefPhoto(),
+  };
+
+  // Initialize photo or avatar placeholder
+  const initialTex = currentThiefTexture || createAvatarTexture();
+  chars.setThiefPhoto(initialTex);
+  world.setVaultPosterPhoto(initialTex);
+
+  return controlsHandle;
 }

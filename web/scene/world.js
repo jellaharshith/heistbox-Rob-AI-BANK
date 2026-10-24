@@ -5,6 +5,7 @@
  */
 
 import * as THREE from './three.module.js';
+import { createAvatarTexture } from './avatar.js';
 
 export const COLORS = {
   background: 0x0B0F1E,
@@ -943,6 +944,51 @@ export class WorldManager {
       laser: laserBeam,
     };
 
+    // --- FRAMED POSTER INSIDE VAULT HALL ---
+    const posterGroup = new THREE.Group();
+    posterGroup.position.set(9, 7.0, 4.05);
+
+    // Elegant gold frame
+    const frameGeo = new THREE.BoxGeometry(4.2, 5.6, 0.25);
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0xF59E0B,
+      metalness: 0.85,
+      roughness: 0.25,
+    });
+    const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+    posterGroup.add(frameMesh);
+
+    // Dark matting backing
+    const mattingGeo = new THREE.BoxGeometry(3.8, 5.2, 0.08);
+    const mattingMat = new THREE.MeshStandardMaterial({ color: 0x0B0F1E, roughness: 0.8 });
+    const mattingMesh = new THREE.Mesh(mattingGeo, mattingMat);
+    mattingMesh.position.z = 0.1;
+    posterGroup.add(mattingMesh);
+
+    // Poster surface plane
+    const photoPlaneGeo = new THREE.PlaneGeometry(3.5, 4.8);
+    const photoPlaneMat = new THREE.MeshBasicMaterial({
+      map: createAvatarTexture(),
+    });
+    this.vaultPosterMesh = new THREE.Mesh(photoPlaneGeo, photoPlaneMat);
+    this.vaultPosterMesh.position.z = 0.15;
+    posterGroup.add(this.vaultPosterMesh);
+
+    // Header plaque above poster
+    const plaqueMesh = this.createPlateMesh('★ SUSPECT DOSSIER ★', 0xF59E0B);
+    plaqueMesh.scale.set(0.72, 0.72, 1);
+    plaqueMesh.position.set(0, 3.2, 0.16);
+    posterGroup.add(plaqueMesh);
+
+    // Dedicated gallery spotlight on the framed poster
+    const posterLight = new THREE.SpotLight(0xFFFBEB, 3.2, 24, Math.PI / 4, 0.35);
+    posterLight.position.set(9, 13.5, 8.5);
+    posterLight.target.position.set(9, 7.0, 4.1);
+    group.add(posterLight);
+    group.add(posterLight.target);
+
+    group.add(posterGroup);
+
     this.scene.add(group);
     this.registerEntity(group, {
       id: "vault_hall",
@@ -1526,6 +1572,13 @@ export class WorldManager {
     };
     this.landmarks[meta.id] = object3D;
     this.interactiveEntities.push(object3D);
+  }
+
+  setVaultPosterPhoto(texture) {
+    if (this.vaultPosterMesh) {
+      this.vaultPosterMesh.material.map = texture;
+      this.vaultPosterMesh.material.needsUpdate = true;
+    }
   }
 
   update(delta, time) {

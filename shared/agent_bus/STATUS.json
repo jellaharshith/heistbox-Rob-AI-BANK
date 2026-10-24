@@ -1,0 +1,121 @@
+{
+  "project": "HeistBox: Ocean's 11 x PAIR Enterprise Edition",
+  "updated_at": "2026-10-24T03:07:00-07:00",
+  "heistguard_retrain_metrics": {
+    "dataset_rows": 250,
+    "novel_injections_ingested": 50,
+    "accuracy": 0.98,
+    "precision": 0.9286,
+    "recall": 1.0,
+    "f1_score": 0.963,
+    "cv_heldout_recall": 0.9826,
+    "p50_latency_ms": 2.434,
+    "weights_sha256": "af45f318aeb419f7627354239f51680a74a53d0d0a901996742ba2c70714ca15",
+    "by_permission_bypass_rejection": "VERIFIED_ACTIVE"
+  },
+  "agents": {
+    "agent_1_gemini_agy": {
+      "owner": "Gemini 3.8 Flash / AGY (Lead Systems Architect)",
+      "scope": ["./shared/", "./kernel/", "./training/", "./main.py"],
+      "status": "COMPLETE",
+      "completed": [
+        "shared/schema.json",
+        "shared/models.py",
+        "shared/agent_bus/STATUS.json",
+        "shared/agent_bus/BLOCKERS.md",
+        "kernel/heistbox_mcp.py (FastMCP Server Gatekeeper: evaluate_heist_attempt, get_vault_audit, trigger_emergency_freeze, inspect_lora_weights, crs_lookup_applicant, crs_verify_identity, crs_screen_dispute_claimant, crs_list_all_personas)",
+        "kernel/crs_mcp.py (Official FastMCP Server for CalHacks-13 CRS Credit Reporting Services: 20 personas, FCRA bureaus, AtData fraud finder)",
+        "shared/crs_personas.json (20 parsed CalHacks CRS test personas from calhacks13-20261023-CRS-Sandbox (1).json)",
+        "tests/test_crs_mcp.py (100% verification of CRS FastMCP tools and ClientSession)",
+        "kernel/heistguard_infer.py (SHA-256 hot-reload trigger watching shared/qlora_evidence.json)",
+        "tests/test_gatekeeper_mcp.py (Full verification of MCP gate tools, Z3 proofs, and hot-reload)",
+        "kernel/mcp_server.py (Official FastMCP Server + 4 Tools + vault://entitlements/{id} Resource)",
+        "kernel/llm_extractor.py (mcp.ClientSession Tool Discovery & Invocation + UV Flashlight Calculus)",
+        "kernel/db_gate.py (Strict By-Permission Operator rho_alpha(R) = R sqcap alpha + 4-Table Gate)",
+        "kernel/pair_z3.py (PAIR Lattice Interior Operator + Live Z3 QF_LIA 5 Theorems UNSAT <10ms)",
+        "kernel/heistguard_infer.py (Ollama heistguard-lora <25ms inference + deterministic fallback)",
+        "training/dataset_harvester.py (150 Real CFPB Disputes + 1000 HuggingFace Injections + 5000 Hypothesis Fuzz Cases)",
+        "training/train_heistguard_qlora.py + training/Modelfile + training/data/heistguard_train.jsonl",
+        "main.py (Unified FastAPI Server on port 8000 with CORS for http://localhost:3000)",
+        "POST /api/kernel/salami-race (50-request async concurrency proof)",
+        "POST /api/kernel/test-bypass (agent_readonly_role direct DB write rejection proof)",
+        "POST /api/kernel/z3-inside-man (?drop_invariant=none|velocity_cap|owner_scope)",
+        "GET /api/kernel/model-lineage (shared/qlora_evidence.json)",
+        "GET /api/kernel/real-tickets (150 real federal CFPB dispute complaint narratives)",
+        "uv_hidden_spans (UV Flashlight Per-Glyph Visibility Calculus on evaluate-heist)"
+      ],
+      "endpoints_ready": [
+        "POST /api/kernel/reset-vault",
+        "POST /api/kernel/evaluate-heist",
+        "POST /api/kernel/vendor-rotate-wallet",
+        "GET /api/kernel/vault-state",
+        "POST /api/kernel/fuzz-test",
+        "GET /api/kernel/real-tickets",
+        "POST /api/kernel/salami-race",
+        "POST /api/kernel/test-bypass",
+        "POST /api/kernel/z3-inside-man",
+        "GET /api/kernel/model-lineage",
+        "POST /api/kernel/run-evolution-loop",
+        "GET /api/integrations/wanted/{poster_id}"
+      ]
+    },
+    "agent_2_claude_codex_integrations": {
+      "owner": "Claude Code 2.1.302 & Codex (Sponsor Integrations)",
+      "scope": ["./integrations/"],
+      "status": "COMPLETE",
+      "integrations_ready": true,
+      "completed": [
+        "Live FastAPI sponsor integrations router with explicit provenance",
+        "Interactive scripts/setup_keys.py .env key wizard",
+        "python-dotenv override=True loading on every readiness check",
+        "GET /api/integrations/status with VERIFIED_LIVE/MISSING_KEY/AUTH_ERROR states",
+        "POST /api/integrations/configure-keys with allow-listed atomic .env updates",
+        "GET /api/integrations/health-provenance with live status and latency",
+        "Gemini Vision and Cartesia Sonic roast pipeline",
+        "Anthropic Claude and Bitdeer voice-bribe scoring fallbacks",
+        "CRS sandbox rap-sheet integration",
+        "Live Base Sepolia RPC validation, block hash anchoring, and EIP-3009 typed authorization signing",
+        "Funded signer broadcast path with BaseScan tx receipt links",
+        "WebAuthn intent binding with localhost demo-enclave bypass",
+        "Factory Droid, Moss, Bright Data, Apify, and SpacetimeDB integration hooks",
+        "Live Bright Data, Apify, CFPB, SEC EDGAR, and RDAP OSINT telemetry",
+        "13 integration tests passing"
+      ],
+      "endpoints_ready": [
+        "GET /api/integrations/status",
+        "POST /api/integrations/configure-keys",
+        "GET /api/integrations/wanted/{poster_id}",
+        "POST /api/integrations/roast-and-poster",
+        "POST /api/integrations/wanted-poster",
+        "POST /api/integrations/voice-bribe",
+        "POST /api/integrations/crs-check",
+        "POST /api/integrations/x402-settle",
+        "POST /api/integrations/webauthn/verify",
+        "POST /api/integrations/droid-patch",
+        "POST /api/integrations/moss-deception",
+        "POST /api/integrations/osint-enrich",
+        "POST /api/integrations/spacetimedb-sync",
+        "POST /api/integrations/spacetimedb",
+        "GET /api/integrations/health-provenance"
+      ]
+    },
+    "agent_3_codex_web": {
+      "owner": "Codex CLI 0.164.0 (Next.js 15 Vegas Vault UI)",
+      "scope": ["./web/"],
+      "status": "COMPLETE",
+      "web_ready": true,
+      "completed": [
+        "npm run build clean (Next 16.4.3, TypeScript strict, Tailwind 4)",
+        "Resilient client adapter web/src/lib/api.ts: 900ms timeout + 5s circuit breaker + type-checked merge over a deterministic local twin of the kernel",
+        "Arena view: 3 columns (LLM judge slot roll / firewall freeze / HeistBox vault door + lasers + BUSTED stamp), PAIR laser split, enclave approval, UV Flashlight badges",
+        "CFO Audit view: 4-clock telemetry, CTE diff, Z3 theorems, LoRA heatmap, Hypothesis + DSR tiles, Droid policy patch",
+        "Interactive Z3 Inside Man Counterexample Generator panel (none/velocity_cap/owner_scope modes)",
+        "Salami Race Concurrency panel (50 async requests -> 1 committed, 49 rejected, Martingale spike)",
+        "Agent Read-Only Role DB Bypass proof panel (proves direct DB write is blocked)",
+        "Real QLoRA Lineage & Checkpoint panel (F1: 1.0, 1986 rows, SHA-256)",
+        "Adversarial Evolution Loop & Real Federal CFPB Ticket Corpus views active",
+        "/wanted/[id] poster with mugshot, megaphone audio, CRS sheet, EIP-3009 nonce, QR"
+      ]
+    }
+  }
+}

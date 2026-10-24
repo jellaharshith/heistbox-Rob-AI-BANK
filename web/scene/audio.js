@@ -372,3 +372,51 @@ export function stopPoliceSiren() {
     activeSirenNode = null;
   }
 }
+
+/** Mechanical camera shutter sound with realistic dual-action click-clack */
+export function playCameraShutter() {
+  if (muted) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  const now = ac.currentTime;
+
+  // Stage 1: Quick crisp mechanical shutter click
+  const osc1 = ac.createOscillator();
+  const gain1 = ac.createGain();
+  const filter1 = ac.createBiquadFilter();
+
+  osc1.type = 'triangle';
+  osc1.frequency.setValueAtTime(1800, now);
+  osc1.frequency.exponentialRampToValueAtTime(320, now + 0.022);
+
+  filter1.type = 'bandpass';
+  filter1.frequency.setValueAtTime(2200, now);
+  filter1.Q.setValueAtTime(5, now);
+
+  gain1.gain.setValueAtTime(0.28, now);
+  gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.028);
+
+  osc1.connect(filter1);
+  filter1.connect(gain1);
+  gain1.connect(ac.destination);
+  osc1.start(now);
+  osc1.stop(now + 0.032);
+
+  // Stage 2: Shutter curtain latch release (~42ms later)
+  const t2 = now + 0.042;
+  const osc2 = ac.createOscillator();
+  const gain2 = ac.createGain();
+
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(950, t2);
+  osc2.frequency.exponentialRampToValueAtTime(140, t2 + 0.038);
+
+  gain2.gain.setValueAtTime(0.22, t2);
+  gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+
+  osc2.connect(gain2);
+  gain2.connect(ac.destination);
+  osc2.start(t2);
+  osc2.stop(t2 + 0.05);
+}

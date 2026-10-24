@@ -1,0 +1,417 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HeistBox: Ocean's 11 x PAIR Enterprise Edition Shared Contracts",
+  "version": "1.0.0",
+  "definitions": {
+    "HeistAttemptRequest": {
+      "type": "object",
+      "required": [
+        "mask_id",
+        "work_item_id",
+        "prompt_text",
+        "proposed_amount_cents",
+        "proposed_source_acct",
+        "proposed_dest_wallet"
+      ],
+      "properties": {
+        "mask_id": {
+          "type": "string",
+          "enum": [
+            "grandma_cookie",
+            "ceo_wire",
+            "pizza_slicer",
+            "voice_bribe",
+            "custom"
+          ]
+        },
+        "work_item_id": {
+          "type": "string",
+          "default": "ticket_104"
+        },
+        "prompt_text": {
+          "type": "string"
+        },
+        "proposed_promo_batch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "proposed_amount_cents": {
+          "type": "integer"
+        },
+        "proposed_source_acct": {
+          "type": "string"
+        },
+        "proposed_dest_wallet": {
+          "type": "string"
+        },
+        "slice_count": {
+          "type": "integer",
+          "default": 1
+        },
+        "webcam_frame_base64": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "voice_transcript": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "HeistGateVerdict": {
+      "type": "object",
+      "required": [
+        "request_id",
+        "busted",
+        "verdict_code",
+        "clocks",
+        "left_vault_llm_judge",
+        "center_firewall",
+        "heistbox_pair"
+      ],
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "busted": {
+          "type": "boolean"
+        },
+        "verdict_code": {
+          "type": "string"
+        },
+        "clocks": {
+          "type": "object",
+          "required": [
+            "llm_ms",
+            "postgres_pair_ms",
+            "cloud_async_ms"
+          ],
+          "properties": {
+            "llm_ms": {
+              "type": "number"
+            },
+            "postgres_pair_ms": {
+              "type": "number"
+            },
+            "cloud_async_ms": {
+              "type": "number"
+            }
+          }
+        },
+        "left_vault_llm_judge": {
+          "type": "object",
+          "required": [
+            "safe_confidence_pct",
+            "robbed_cents",
+            "status"
+          ],
+          "properties": {
+            "safe_confidence_pct": {
+              "type": "number"
+            },
+            "robbed_cents": {
+              "type": "integer"
+            },
+            "status": {
+              "type": "string",
+              "const": "ROBBED"
+            }
+          }
+        },
+        "center_firewall": {
+          "type": "object",
+          "required": [
+            "robbed_cents",
+            "honest_refund_frozen",
+            "status"
+          ],
+          "properties": {
+            "robbed_cents": {
+              "type": "integer",
+              "const": 0
+            },
+            "honest_refund_frozen": {
+              "type": "boolean",
+              "const": true
+            },
+            "status": {
+              "type": "string",
+              "const": "FROZEN"
+            }
+          }
+        },
+        "heistbox_pair": {
+          "type": "object",
+          "required": [
+            "robbed_cents",
+            "touched_rows_total",
+            "unauthorized_rows_rolled_back",
+            "red_stripped_cents",
+            "green_repaired_cents",
+            "green_entitlement_id",
+            "wanted_stars",
+            "conformal_martingale_r",
+            "deception_index_dsr",
+            "z3_proof",
+            "heistguard_lora",
+            "hypothesis_fuzz_passed",
+            "intent_hash"
+          ],
+          "properties": {
+            "robbed_cents": {
+              "type": "integer",
+              "const": 0
+            },
+            "touched_rows_total": {
+              "type": "integer"
+            },
+            "unauthorized_rows_rolled_back": {
+              "type": "integer"
+            },
+            "red_stripped_cents": {
+              "type": "integer"
+            },
+            "green_repaired_cents": {
+              "type": "integer"
+            },
+            "green_entitlement_id": {
+              "type": "string"
+            },
+            "wanted_stars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "conformal_martingale_r": {
+              "type": "number"
+            },
+            "deception_index_dsr": {
+              "type": "number"
+            },
+            "z3_proof": {
+              "type": "object",
+              "required": [
+                "status",
+                "theorems_verified",
+                "solve_ms"
+              ],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "const": "UNSAT"
+                },
+                "theorems_verified": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "solve_ms": {
+                  "type": "number"
+                }
+              }
+            },
+            "heistguard_lora": {
+              "type": "object",
+              "required": [
+                "deception_prob",
+                "tainted_spans",
+                "dataset_sources"
+              ],
+              "properties": {
+                "deception_prob": {
+                  "type": "number"
+                },
+                "tainted_spans": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dataset_sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "hypothesis_fuzz_passed": {
+              "type": "integer"
+            },
+            "intent_hash": {
+              "type": "string"
+            },
+            "settlement_hash": {
+              "type": ["string", "null"]
+            },
+            "settlement_recipient": {
+              "type": ["string", "null"]
+            }
+          }
+        }
+      }
+    },
+    "WantedPosterCard": {
+      "type": "object",
+      "required": [
+        "poster_id",
+        "alias_title",
+        "outfit_roast",
+        "megaphone_transcript",
+        "crs_rap_sheet"
+      ],
+      "properties": {
+        "poster_id": {
+          "type": "string"
+        },
+        "alias_title": {
+          "type": "string"
+        },
+        "outfit_roast": {
+          "type": "string"
+        },
+        "megaphone_transcript": {
+          "type": "string"
+        },
+        "audio_base64": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "crs_rap_sheet": {
+          "type": "object",
+          "required": [
+            "score",
+            "flags",
+            "verified"
+          ],
+          "properties": {
+            "score": {
+              "type": "integer"
+            },
+            "flags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "verified": {
+              "type": "boolean"
+            }
+          }
+        },
+        "mugshot_data_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "x402_receipt": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "tx_hash",
+            "chain_id",
+            "green_settled_cents",
+            "nice_try_bounty_cents",
+            "eip3009_marked_bill_nonce",
+            "basescan_url"
+          ],
+          "properties": {
+            "tx_hash": {
+              "type": "string"
+            },
+            "chain_id": {
+              "type": "integer",
+              "const": 84532
+            },
+            "green_settled_cents": {
+              "type": "integer"
+            },
+            "nice_try_bounty_cents": {
+              "type": "integer",
+              "const": 1
+            },
+            "eip3009_marked_bill_nonce": {
+              "type": "string"
+            },
+            "basescan_url": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "VendorWalletRotationRequest": {
+      "type": "object",
+      "required": [
+        "vendor_id",
+        "work_item_id",
+        "old_wallet",
+        "new_wallet",
+        "nonce",
+        "public_key_hex",
+        "signature_hex"
+      ],
+      "properties": {
+        "vendor_id": {
+          "type": "string"
+        },
+        "work_item_id": {
+          "type": "string"
+        },
+        "old_wallet": {
+          "type": "string"
+        },
+        "new_wallet": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "public_key_hex": {
+          "type": "string"
+        },
+        "signature_hex": {
+          "type": "string"
+        }
+      }
+    },
+    "FuzzTestResponse": {
+      "type": "object",
+      "required": [
+        "invariants_verified",
+        "duration_ms"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "FUZZ_PASS"
+        },
+        "cases": {
+          "type": "integer",
+          "const": 5000
+        },
+        "invariants_verified": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "duration_ms": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

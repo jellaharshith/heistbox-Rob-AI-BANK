@@ -1,8 +1,11 @@
 import asyncio
+import json
+import re
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, HTTPException, Header
+from fastapi import FastAPI, WebSocket, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from . import store, brain, db
 from .room import room
@@ -18,6 +21,39 @@ async def lifespan(_app):
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# Photos never reach the server: player bodies are tiny JSON, so anything big or carrying a data: URI is refused.
+MAX_BODY_BYTES = 10 * 1024
+_NO_PHOTO_PATHS = {"/api/session", "/api/attack"}
+_DATA_URI = re.compile(r"data:[\w.+-]+/[\w.+-]+[;,]", re.IGNORECASE)
+
+def _strings(v):
+    if isinstance(v, str):
+        yield v
+    elif isinstance(v, dict):
+        for k, x in v.items():
+            yield k
+            yield from _strings(x)
+    elif isinstance(v, list):
+        for x in v:
+            yield from _strings(x)
+
+@app.middleware("http")
+async def reject_image_payloads(request: Request, call_next):
+    if request.method == "POST" and request.url.path in _NO_PHOTO_PATHS:
+        declared = request.headers.get("content-length", "")
+        if declared.isdigit() and int(declared) > MAX_BODY_BYTES:
+            return JSONResponse({"detail": "body too large"}, status_code=413)
+        raw = await request.body()
+        if len(raw) > MAX_BODY_BYTES:
+            return JSONResponse({"detail": "body too large"}, status_code=413)
+        try:
+            parsed = json.loads(raw) if raw else None
+        except ValueError:
+            parsed = raw.decode("utf-8", "replace")
+        if any(_DATA_URI.search(s) for s in _strings(parsed)):
+            return JSONResponse({"detail": "image data not accepted"}, status_code=422)
+    return await call_next(request)
 
 class AttackIn(BaseModel):
     session: str

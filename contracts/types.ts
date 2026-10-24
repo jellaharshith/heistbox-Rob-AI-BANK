@@ -3,7 +3,7 @@
 // All money is PLAY MONEY in integer cents. No real payment rails exist anywhere.
 // Every latency_ms / row count is measured live by the server; nothing is hardcoded.
 
-export const CONTRACT_VERSION = "1.0.0";
+export const CONTRACT_VERSION = "1.1.0"; // 1.1.0: additive AttackResponse.audit (see AuditTrail)
 
 // ---------------------------------------------------------------------------
 // Agents
@@ -288,6 +288,32 @@ export interface WalletCheck {
   latency_ms: number;
 }
 
+/** One row the RIGHT vault's dry-run computed, as the database saw it. */
+export interface AuditRow {
+  effect_idx: number;
+  claimed_work_item_id: string | null;
+  amount_cents: number;
+  dest_wallet: string;
+  source_acct: string;
+  /** Joined to this session's server-authenticated entitlement (work item, wallet and source account all match). */
+  matched: boolean;
+  /** After clipping to the remaining entitlement. 0 when unmatched or rejected. */
+  allowed_cents: number;
+  /** Why the row was blocked or clipped, or "within entitlement". */
+  note: string;
+}
+
+/**
+ * What the RIGHT vault's dry-run transaction actually ran and returned. Added in 1.1.0 because
+ * VaultVerdict carries only totals, and an audit view needs the per-row evidence.
+ * The statements are the parameterized SQL texts executed (placeholders, not values).
+ */
+export interface AuditTrail {
+  statements: string[];
+  rows: AuditRow[];
+  rolled_back: boolean;
+}
+
 export interface AttackResponse {
   attack_id: string;
   session_id: string;
@@ -301,6 +327,8 @@ export interface AttackResponse {
   steps: HeistStep[];
   salami: SalamiSlice[] | null;
   wallet_check: WalletCheck | null;
+  /** RIGHT vault dry-run evidence; null only if the dry-run itself could not run. */
+  audit: AuditTrail | null;
   total_ms: number;
 }
 

@@ -1,6 +1,10 @@
-# HeistBox API contract v1.0.0
+# HeistBox API contract v1.1.0
 
 The TypeScript types in [`types.ts`](./types.ts) are the source of truth. This file is the prose version.
+
+**1.1.0 (integration pass):** `AttackResponse.audit` added (additive). `VaultVerdict` only carries totals, so the Audit view
+had nothing to show for "what the database saw". `audit` returns the parameterized SQL texts the RIGHT vault ran plus one row
+per proposed effect (`matched`, `allowed_cents`, `note`). Nothing else changed.
 
 - **Real server** (`/server`, FastAPI): `http://localhost:8787`, WebSocket `ws://localhost:8787/ws`
 - **Mock server** (`/contracts/mock-server.js`, zero deps): `http://localhost:8788`, WebSocket `ws://localhost:8788/ws`

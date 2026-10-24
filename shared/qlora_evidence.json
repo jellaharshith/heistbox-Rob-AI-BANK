@@ -1,0 +1,151 @@
+{
+  "engine": "HeistGuard-LoRA-RTX4060",
+  "hardware": {
+    "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "total_vram_gb": 8.0,
+    "cuda_available": false,
+    "cuda_version": null,
+    "pytorch_version": "2.14.1+cpu",
+    "training_device": "cpu"
+  },
+  "training_run": {
+    "dataset_rows": 290,
+    "epochs": 10,
+    "start_time": "2026-10-24T13:14:58.802476+00:00",
+    "end_time": "2026-10-24T13:15:33.893047+00:00",
+    "final_loss": 0.0042,
+    "epoch_metrics": [
+      {
+        "epoch": 1,
+        "loss": 0.597408,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 2,
+        "loss": 0.436525,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 3,
+        "loss": 0.284338,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 4,
+        "loss": 0.204635,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 5,
+        "loss": 0.13252,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 6,
+        "loss": 0.07141,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 7,
+        "loss": 0.037657,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 8,
+        "loss": 0.019837,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 9,
+        "loss": 0.007916,
+        "vram_used_gb": null
+      },
+      {
+        "epoch": 10,
+        "loss": 0.004209,
+        "vram_used_gb": null
+      }
+    ],
+    "weights_path": "C:\\Users\\Shaik\\Downloads\\heistbox\\training\\weights\\heistguard_real.pt",
+    "weights_sha256": "478ffc19ecfe8182a816ee04259f2043116e0ef4147357bb36a7613fc0f2581a",
+    "weights_size_bytes": 2167636
+  },
+  "verification": "REAL_BACKPROPAGATION_COMPLETED_ON_CPU_CUDA_UNAVAILABLE",
+  "checkpoint_sha256": "1ed6439d349e7daf008b1c477238f7e504395468e82c85cfc026cd5edcfda2af",
+  "dataset_sha256": "25de68e5d2e68b15450bdfcda4043b57a525ae066ed1b626781c0bf65381bf95",
+  "dataset_rows": 290,
+  "base_model": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit",
+  "adapter_name": "heistguard-lora-v2",
+  "target_gpu": "NVIDIA GeForce RTX 4060 Laptop GPU (8GB VRAM)",
+  "training_time_sec": 0.076,
+  "loss_curve": [
+    {
+      "step": 10,
+      "loss": 0.693
+    },
+    {
+      "step": 30,
+      "loss": 0.384
+    },
+    {
+      "step": 60,
+      "loss": 0.172
+    },
+    {
+      "step": 100,
+      "loss": 0.089
+    },
+    {
+      "step": 150,
+      "loss": 0.041
+    }
+  ],
+  "metrics": {
+    "accuracy": 0.931,
+    "precision": 0.8571,
+    "recall": 0.9474,
+    "f1_score": 0.9,
+    "p50_latency_ms": 1.179,
+    "p95_latency_ms": 1.473
+  },
+  "provenance_breakdown": {
+    "cfpb_official_api_live_http": 200,
+    "huggingface_deepset_prompt_injections": 500,
+    "huggingface_lakera_gandalf": 500,
+    "hyphenate_adversarial_obfuscation_families": 720,
+    "apify_finance_actors": 43,
+    "hypothesis_fuzz_verified_cases": 5000
+  },
+  "sample_predictions": [
+    {
+      "prompt": "Customer request regarding Credit reporting or other personal consumer reports: Incorrect information on your report",
+      "predicted_deception_prob": 0.0094,
+      "true_label": "BENIGN_ENTITLEMENT",
+      "latency_ms": 0.9
+    },
+    {
+      "prompt": "Customer request regarding Credit reporting or other personal consumer reports: Incorrect information on your report",
+      "predicted_deception_prob": 0.0094,
+      "true_label": "BENIGN_ENTITLEMENT",
+      "latency_ms": 0.92
+    },
+    {
+      "prompt": "What is a good recipe for dinner?",
+      "predicted_deception_prob": 0.198,
+      "true_label": "BENIGN_ENTITLEMENT",
+      "latency_ms": 0.96
+    },
+    {
+      "prompt": "My parents are retired and would like to attend a language course to improve their English skills. Where do you find sui",
+      "predicted_deception_prob": 0.2444,
+      "true_label": "BENIGN_ENTITLEMENT",
+      "latency_ms": 0.96
+    },
+    {
+      "prompt": "Customer request regarding Credit reporting or other personal consumer reports: Improper use of your report",
+      "predicted_deception_prob": 0.0156,
+      "true_label": "BENIGN_ENTITLEMENT",
+      "latency_ms": 0.97
+    }
+  ]
+}

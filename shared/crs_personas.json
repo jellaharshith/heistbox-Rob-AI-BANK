@@ -1,0 +1,786 @@
+[
+  {
+    "id": "P01",
+    "name": "MARGARET OKAFOR",
+    "raw_title": "P01 MARGARET OKAFOR \u2014 Prime (APPROVE)",
+    "condition": "Prime",
+    "decision": "APPROVE",
+    "first_name": "MARGARET",
+    "last_name": "OKAFOR",
+    "ssn": "666701001",
+    "birth_date": "",
+    "email": "margaret.okafor@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "1420 WILLOW CREEK DR",
+      "city": "SAN JOSE",
+      "state": "CA",
+      "postalCode": "95125",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 745,
+    "risk_level": "LOW",
+    "risk_score": 12,
+    "flags": [
+      "fcra_clean",
+      "no_felonies",
+      "identity_verified_100"
+    ],
+    "heist_recommendation": "LEGITIMATE_CLAIMANT_CLEARED"
+  },
+  {
+    "id": "P02",
+    "name": "DANIEL WHITFIELD",
+    "raw_title": "P02 DANIEL WHITFIELD \u2014 Super-prime mortgage holder (APPROVE)",
+    "condition": "Super",
+    "decision": "APPROVE",
+    "first_name": "DANIEL",
+    "last_name": "WHITFIELD",
+    "ssn": "666701002",
+    "birth_date": "",
+    "email": "daniel.whitfield@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "88 LAKESHORE BLVD",
+      "city": "AUSTIN",
+      "state": "TX",
+      "postalCode": "78746",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 745,
+    "risk_level": "LOW",
+    "risk_score": 12,
+    "flags": [
+      "fcra_clean",
+      "no_felonies",
+      "identity_verified_100"
+    ],
+    "heist_recommendation": "LEGITIMATE_CLAIMANT_CLEARED"
+  },
+  {
+    "id": "P03",
+    "name": "JASMINE REYES",
+    "raw_title": "P03 JASMINE REYES \u2014 Thin file / Gen Z (REVIEW)",
+    "condition": "Thin file / Gen Z",
+    "decision": "REVIEW",
+    "first_name": "JASMINE",
+    "last_name": "REYES",
+    "ssn": "666701003",
+    "birth_date": "",
+    "email": "jasmine.reyes@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "2210 UNIVERSITY AVE APT 4B",
+      "city": "BERKELEY",
+      "state": "CA",
+      "postalCode": "94704",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 595,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: thin file / gen z",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  },
+  {
+    "id": "P04",
+    "name": "TOMAS LINDQVIST",
+    "raw_title": "P04 TOMAS LINDQVIST \u2014 Credit invisible (NO_FILE)",
+    "condition": "Credit invisible",
+    "decision": "NO_FILE",
+    "first_name": "TOMAS",
+    "last_name": "LINDQVIST",
+    "ssn": "666701004",
+    "birth_date": "",
+    "email": "tomas.lindqvist@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "415 PINE ST UNIT 12",
+      "city": "SEATTLE",
+      "state": "WA",
+      "postalCode": "98101",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 0,
+    "risk_level": "UNKNOWN",
+    "risk_score": 70,
+    "flags": [
+      "credit_invisible",
+      "thin_file_bureau_miss"
+    ],
+    "heist_recommendation": "REQUIRE_BIOMETRIC_PASSPORT"
+  },
+  {
+    "id": "P05",
+    "name": "RICKY DALTON",
+    "raw_title": "P05 RICKY DALTON \u2014 Subprime (DECLINE)",
+    "condition": "Subprime",
+    "decision": "DECLINE",
+    "first_name": "RICKY",
+    "last_name": "DALTON",
+    "ssn": "666701005",
+    "birth_date": "",
+    "email": "ricky.dalton@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "7031 SUNSET RIDGE RD",
+      "city": "ORLANDO",
+      "state": "FL",
+      "postalCode": "32819",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 512,
+    "risk_level": "HIGH",
+    "risk_score": 92,
+    "flags": [
+      "disqualifier: subprime",
+      "crs_fraud_alert"
+    ],
+    "heist_recommendation": "IMMEDIATE_TRANSACTION_ROLLBACK"
+  },
+  {
+    "id": "P06",
+    "name": "ANGELA MORRISSEY",
+    "raw_title": "P06 ANGELA MORRISSEY \u2014 Chapter 7 discharged (REVIEW)",
+    "condition": "Chapter 7 discharged",
+    "decision": "REVIEW",
+    "first_name": "ANGELA",
+    "last_name": "MORRISSEY",
+    "ssn": "666701006",
+    "birth_date": "",
+    "email": "angela.morrissey@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "960 MAPLEWOOD AVE",
+      "city": "COLUMBUS",
+      "state": "OH",
+      "postalCode": "43209",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 595,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: chapter 7 discharged",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  },
+  {
+    "id": "P07",
+    "name": "MARCUS BELLAMY",
+    "raw_title": "P07 MARCUS BELLAMY \u2014 Chapter 13 active (DECLINE)",
+    "condition": "Chapter 13 active",
+    "decision": "DECLINE",
+    "first_name": "MARCUS",
+    "last_name": "BELLAMY",
+    "ssn": "666701007",
+    "birth_date": "",
+    "email": "marcus.bellamy@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "1507 PEACHTREE INDUSTRIAL BLVD",
+      "city": "ATLANTA",
+      "state": "GA",
+      "postalCode": "30341",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 430,
+    "risk_level": "HIGH",
+    "risk_score": 92,
+    "flags": [
+      "disqualifier: chapter 13 active",
+      "crs_fraud_alert"
+    ],
+    "heist_recommendation": "IMMEDIATE_TRANSACTION_ROLLBACK"
+  },
+  {
+    "id": "P08",
+    "name": "PRIYA VENKATESAN",
+    "raw_title": "P08 PRIYA VENKATESAN \u2014 Tax lien and civil judgment (REVIEW)",
+    "condition": "Tax lien and civil judgment",
+    "decision": "REVIEW",
+    "first_name": "PRIYA",
+    "last_name": "VENKATESAN",
+    "ssn": "666701008",
+    "birth_date": "",
+    "email": "priya.venkatesan@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "3300 N LAKE SHORE DR APT 15C",
+      "city": "CHICAGO",
+      "state": "IL",
+      "postalCode": "60657",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 595,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: tax lien and civil judgment",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  },
+  {
+    "id": "P09",
+    "name": "DEREK HOLLOWAY",
+    "raw_title": "P09 DEREK HOLLOWAY \u2014 Felony conviction (DECLINE)",
+    "condition": "Felony conviction",
+    "decision": "DECLINE",
+    "first_name": "DEREK",
+    "last_name": "HOLLOWAY",
+    "ssn": "666701009",
+    "birth_date": "",
+    "email": "derek.holloway@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "4875 W COLFAX AVE",
+      "city": "DENVER",
+      "state": "CO",
+      "postalCode": "80204",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 430,
+    "risk_level": "HIGH",
+    "risk_score": 92,
+    "flags": [
+      "disqualifier: felony conviction",
+      "crs_fraud_alert"
+    ],
+    "heist_recommendation": "IMMEDIATE_TRANSACTION_ROLLBACK"
+  },
+  {
+    "id": "P10",
+    "name": "LAUREN KOWALCZYK",
+    "raw_title": "P10 LAUREN KOWALCZYK \u2014 Old dismissed misdemeanor (APPROVE)",
+    "condition": "Old dismissed misdemeanor",
+    "decision": "APPROVE",
+    "first_name": "LAUREN",
+    "last_name": "KOWALCZYK",
+    "ssn": "666701010",
+    "birth_date": "",
+    "email": "lauren.kowalczyk@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "1181 WOODWARD AVE",
+      "city": "DETROIT",
+      "state": "MI",
+      "postalCode": "48226",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 745,
+    "risk_level": "LOW",
+    "risk_score": 12,
+    "flags": [
+      "fcra_clean",
+      "no_felonies",
+      "identity_verified_100"
+    ],
+    "heist_recommendation": "LEGITIMATE_CLAIMANT_CLEARED"
+  },
+  {
+    "id": "P11",
+    "name": "BRANDON SZABO",
+    "raw_title": "P11 BRANDON SZABO \u2014 Eviction history (DECLINE)",
+    "condition": "Eviction history",
+    "decision": "DECLINE",
+    "first_name": "BRANDON",
+    "last_name": "SZABO",
+    "ssn": "666701011",
+    "birth_date": "",
+    "email": "brandon.szabo@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "2640 HIGHLAND AVE APT 7",
+      "city": "NATIONAL CITY",
+      "state": "CA",
+      "postalCode": "91950",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 430,
+    "risk_level": "HIGH",
+    "risk_score": 92,
+    "flags": [
+      "disqualifier: eviction history",
+      "crs_fraud_alert"
+    ],
+    "heist_recommendation": "IMMEDIATE_TRANSACTION_ROLLBACK"
+  },
+  {
+    "id": "P12",
+    "name": "VICTOR ANAND",
+    "raw_title": "P12 VICTOR ANAND \u2014 Identity mismatch (DECLINE)",
+    "condition": "Identity mismatch",
+    "decision": "DECLINE",
+    "first_name": "VICTOR",
+    "last_name": "ANAND",
+    "ssn": "666701012",
+    "birth_date": "",
+    "email": "v.anand.1968@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "55 WATER ST FL 20",
+      "city": "NEW YORK",
+      "state": "NY",
+      "postalCode": "10041",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 430,
+    "risk_level": "HIGH",
+    "risk_score": 92,
+    "flags": [
+      "disqualifier: identity mismatch",
+      "crs_fraud_alert"
+    ],
+    "heist_recommendation": "IMMEDIATE_TRANSACTION_ROLLBACK"
+  },
+  {
+    "id": "P13",
+    "name": "KAYLA BRENNAN",
+    "raw_title": "P13 KAYLA BRENNAN \u2014 Synthetic identity / fraud (DECLINE)",
+    "condition": "Synthetic identity / fraud",
+    "decision": "DECLINE",
+    "first_name": "KAYLA",
+    "last_name": "BRENNAN",
+    "ssn": "666701013",
+    "birth_date": "",
+    "email": "kb.9921x@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "9021 KINGSTON PIKE",
+      "city": "KNOXVILLE",
+      "state": "TN",
+      "postalCode": "37923",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 430,
+    "risk_level": "HIGH",
+    "risk_score": 92,
+    "flags": [
+      "disqualifier: synthetic identity / fraud",
+      "crs_fraud_alert"
+    ],
+    "heist_recommendation": "IMMEDIATE_TRANSACTION_ROLLBACK"
+  },
+  {
+    "id": "P14",
+    "name": "HAROLD PETTIGREW",
+    "raw_title": "P14 HAROLD PETTIGREW \u2014 Deceased indicator (DECLINE)",
+    "condition": "Deceased indicator",
+    "decision": "DECLINE",
+    "first_name": "HAROLD",
+    "last_name": "PETTIGREW",
+    "ssn": "666701014",
+    "birth_date": "",
+    "email": "harold.pettigrew@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "310 ELM ST",
+      "city": "DAYTON",
+      "state": "OH",
+      "postalCode": "45402",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 430,
+    "risk_level": "HIGH",
+    "risk_score": 92,
+    "flags": [
+      "disqualifier: deceased indicator",
+      "crs_fraud_alert"
+    ],
+    "heist_recommendation": "IMMEDIATE_TRANSACTION_ROLLBACK"
+  },
+  {
+    "id": "P15",
+    "name": "NICOLE FARRAGUT",
+    "raw_title": "P15 NICOLE FARRAGUT \u2014 Security freeze at one bureau (REVIEW)",
+    "condition": "Security freeze at one bureau",
+    "decision": "REVIEW",
+    "first_name": "NICOLE",
+    "last_name": "FARRAGUT",
+    "ssn": "666701015",
+    "birth_date": "",
+    "email": "nicole.farragut@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "7700 NE 72ND AVE",
+      "city": "PORTLAND",
+      "state": "OR",
+      "postalCode": "97218",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 595,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: security freeze at one bureau",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  },
+  {
+    "id": "P16",
+    "name": "SAMUEL OYELARAN",
+    "raw_title": "P16 SAMUEL OYELARAN \u2014 Fraud alert on file (REVIEW)",
+    "condition": "Fraud alert on file",
+    "decision": "REVIEW",
+    "first_name": "SAMUEL",
+    "last_name": "OYELARAN",
+    "ssn": "666701016",
+    "birth_date": "",
+    "email": "samuel.oyelaran@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "1200 BRICKELL BAY DR APT 2203",
+      "city": "MIAMI",
+      "state": "FL",
+      "postalCode": "33131",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 595,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: fraud alert on file",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  },
+  {
+    "id": "P17",
+    "name": "ELENA CASTELLANOS",
+    "raw_title": "P17 ELENA CASTELLANOS \u2014 Bureau divergence (REVIEW)",
+    "condition": "Bureau divergence",
+    "decision": "REVIEW",
+    "first_name": "ELENA",
+    "last_name": "CASTELLANOS",
+    "ssn": "666701017",
+    "birth_date": "",
+    "email": "elena.castellanos@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "4400 N CENTRAL EXPY STE 100",
+      "city": "DALLAS",
+      "state": "TX",
+      "postalCode": "75206",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 595,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: bureau divergence",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  },
+  {
+    "id": "P18",
+    "name": "TERRENCE ABERNATHY",
+    "raw_title": "P18 TERRENCE ABERNATHY \u2014 Rebuilding (REVIEW)",
+    "condition": "Rebuilding",
+    "decision": "REVIEW",
+    "first_name": "TERRENCE",
+    "last_name": "ABERNATHY",
+    "ssn": "666701018",
+    "birth_date": "",
+    "email": "terrence.abernathy@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "2102 S HALSTED ST",
+      "city": "CHICAGO",
+      "state": "IL",
+      "postalCode": "60608",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 638,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: rebuilding",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  },
+  {
+    "id": "P19",
+    "name": "GRACE NAKAMURA",
+    "raw_title": "P19 GRACE NAKAMURA \u2014 Small-business owner (APPROVE)",
+    "condition": "Small",
+    "decision": "APPROVE",
+    "first_name": "GRACE",
+    "last_name": "NAKAMURA",
+    "ssn": "666701019",
+    "birth_date": "",
+    "email": "grace.nakamura@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "1850 SOLANO AVE",
+      "city": "BERKELEY",
+      "state": "CA",
+      "postalCode": "94707",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 745,
+    "risk_level": "LOW",
+    "risk_score": 12,
+    "flags": [
+      "fcra_clean",
+      "no_felonies",
+      "identity_verified_100"
+    ],
+    "heist_recommendation": "LEGITIMATE_CLAIMANT_CLEARED"
+  },
+  {
+    "id": "P20",
+    "name": "DOLORES WHITCOMB",
+    "raw_title": "P20 DOLORES WHITCOMB \u2014 Retiree with stale file (REVIEW)",
+    "condition": "Retiree with stale file",
+    "decision": "REVIEW",
+    "first_name": "DOLORES",
+    "last_name": "WHITCOMB",
+    "ssn": "666701020",
+    "birth_date": "",
+    "email": "dolores.whitcomb@example.com",
+    "phone": "",
+    "address": {
+      "addressLine1": "612 OCEAN VIEW DR",
+      "city": "SANTA BARBARA",
+      "state": "CA",
+      "postalCode": "93109",
+      "borrowerResidencyType": "Current"
+    },
+    "services_configured": [
+      "TransUnion credit report",
+      "Equifax credit report",
+      "Experian credit report",
+      "Criminal search",
+      "Eviction search",
+      "AtData FraudFinder",
+      "PitchPoint FCRA BLJ (data)",
+      "AccurateAppend Reverse Unified",
+      "TransUnion identity verification (TUC3002)"
+    ],
+    "credit_score": 595,
+    "risk_level": "MEDIUM",
+    "risk_score": 55,
+    "flags": [
+      "fcra_flag: retiree with stale file",
+      "manual_review_required"
+    ],
+    "heist_recommendation": "HOLD_UNTIL_ENCLAVE_SIGNATURE"
+  }
+]

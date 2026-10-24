@@ -20,7 +20,7 @@ def migrate(conn: psycopg.Connection) -> list[str]:
     conn.execute(
         "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())"
     )
-    done = {r[0] for r in conn.execute("SELECT version FROM schema_migrations")}
+    done = {r["version"] if isinstance(r, dict) else r[0] for r in conn.execute("SELECT version FROM schema_migrations")}
     applied = []
     for f in sorted(MIGRATIONS.glob("*.sql")):
         if f.stem in done:

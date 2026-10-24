@@ -1,11 +1,22 @@
+import asyncio
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, WebSocket, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from . import store, brain
+from . import store, brain, db
 from .room import room
 from .round_runner import run_scenario
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_app):
+    await asyncio.to_thread(db.init_db)  # start/connect Postgres, migrate, ensure seed
+    room.start()                         # round/weather loop + agent think loop
+    yield
+    await room.stop()
+    db.close()
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 class AttackIn(BaseModel):

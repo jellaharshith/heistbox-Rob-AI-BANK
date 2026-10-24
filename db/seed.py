@@ -68,5 +68,6 @@ def seed(conn: psycopg.Connection) -> dict:
         del key
         conn.execute("UPDATE payment_entitlements SET enrolled_wallet = %s WHERE work_item_id = %s", (head_wallet, VENDOR_WORK_ITEM))
 
-    n = conn.execute("SELECT count(*) FROM payment_entitlements WHERE customer_id LIKE 'seed_%%'").fetchone()[0]
+    row = conn.execute("SELECT count(*) AS n FROM payment_entitlements WHERE customer_id LIKE 'seed_%%'").fetchone()
+    n = row["n"] if isinstance(row, dict) else row[0]
     return {"seeded_entitlements": n, "promo_batch": PROMO_BATCH, "vendor_chain_links": 2, "vendor_head_wallet": head_wallet}

@@ -1,9 +1,29 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useGame, startCamera, stopCamera } from "../game/store";
+
 export function ConsentModal({ close }: { close: () => void }) {
   const button = useRef<HTMLButtonElement>(null);
+  const cameraEnabled = useGame((s) => s.cameraEnabled);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     button.current?.focus();
   }, []);
+
+  const handleToggle = async () => {
+    setError("");
+    if (cameraEnabled) {
+      stopCamera();
+    } else {
+      try {
+        await startCamera();
+        close();
+      } catch (err) {
+        setError("Webcam permission denied or no camera device found.");
+      }
+    }
+  };
+
   return (
     <div
       className="modal-backdrop"
@@ -20,17 +40,23 @@ export function ConsentModal({ close }: { close: () => void }) {
         <p className="eyebrow">YOUR FACE. YOUR CHOICE.</p>
         <h2 id="consent-title">A heist without a camera.</h2>
         <p>
-          This playable checkpoint uses an anonymous wanted poster. Camera
-          capture is not connected yet; no webcam permission or image is
-          requested.
+          You have full control over camera capture. By default, no webcam
+          permission or image is requested, preserving complete privacy with
+          an anonymous wanted poster.
         </p>
         <p>
-          The later opt-in flow will ask before capture, show a camera-on
-          indicator, and send one frame only.
+          Opting in enables live video monitoring inside the bank arena and
+          captures your operator snapshot for the wanted poster.
         </p>
-        <button ref={button} onClick={close}>
-          Continue without camera
-        </button>
+        {error && <p className="camera-err">{error}</p>}
+        <div className="consent-actions">
+          <button ref={button} onClick={close}>
+            Continue without camera
+          </button>
+          <button className="camera-toggle-btn" onClick={handleToggle}>
+            {cameraEnabled ? "Turn camera off" : "● Turn camera on (Live Video)"}
+          </button>
+        </div>
       </section>
     </div>
   );

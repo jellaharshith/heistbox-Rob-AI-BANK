@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Canvas } from "@react-three/fiber";
 import { useProgress } from "@react-three/drei";
@@ -6,12 +6,49 @@ import { ACESFilmicToneMapping } from "three";
 import { Bank } from "./scene/Bank";
 import { useGame } from "./game/store";
 import { skipHeist } from "./game/director";
+import { connectRoomWebSocket } from "./net/client";
 import { ChatBox } from "./ui/ChatBox";
 import { VaultCards } from "./ui/VaultCards";
 import { Scoreboard } from "./ui/Scoreboard";
 import { Subtitles } from "./ui/Subtitles";
 import { ConsentModal } from "./ui/ConsentModal";
 import "./style.css";
+
+function CameraFeed() {
+  const stream = useGame((s) => s.cameraStream);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [stream]);
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth || 320;
+    canvas.height = videoRef.current.videoHeight || 240;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      useGame.setState({ capturedPhoto: dataUrl, posterUrl: dataUrl });
+    }
+  };
+
+  return (
+    <div className="camera-feed-pip">
+      <div className="camera-feed-header">
+        <span><span className="live-dot" /> LIVE CAM 01 // OPERATOR</span>
+        <button className="snap-btn" onClick={capturePhoto} title="Capture Wanted Photo">
+          📸 SNAP
+        </button>
+      </div>
+      <video ref={videoRef} autoPlay playsInline muted />
+    </div>
+  );
+}
 class Boundary extends React.Component<
   React.PropsWithChildren,
   { error: string }
@@ -36,10 +73,19 @@ function App() {
     mock = useGame((s) => s.mock),
     camera = useGame((s) => s.camera),
     stage = useGame((s) => s.stage),
-    error = useGame((s) => s.error);
+    error = useGame((s) => s.error),
+    cameraEnabled = useGame((s) => s.cameraEnabled),
+    capturedPhoto = useGame((s) => s.capturedPhoto);
   const phase = useGame((s) => s.phase);
   const [consent, setConsent] = useState(false);
   const { progress } = useProgress();
+
+  useEffect(() => {
+    if (mock) return;
+    const disconnect = connectRoomWebSocket();
+    return () => disconnect();
+  }, [mock]);
+
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (
@@ -72,7 +118,7 @@ function App() {
             <small>THE ADVERSARIAL BANKING EXPERIMENT</small>
           </div>
           <div className="status">
-            ● {mock ? "MOCK · OFFLINE READY" : "LIVE · NOT CONNECTED"}
+            ● {mock ? "MOCK · OFFLINE READY" : "LIVE · CONNECTED"}
           </div>
         </header>
         <section className="intro">
@@ -81,8 +127,11 @@ function App() {
             <h1>Rob our AI bank.</h1>
             <p>Talk your way past Tina. See which vault holds.</p>
           </div>
-          <button className="privacy" onClick={() => setConsent(true)}>
-            ◎ Camera off · your choice
+          <button
+            className={`privacy ${cameraEnabled ? "active" : ""}`}
+            onClick={() => setConsent(true)}
+          >
+            {cameraEnabled ? "● Camera on · Live active" : "◎ Camera off · your choice"}
           </button>
         </section>
         <div className="arena">
@@ -99,6 +148,7 @@ function App() {
               <Bank />
             </Suspense>
           </Canvas>
+          {cameraEnabled && <CameraFeed />}
           <div className="scene-label">
             LIVE BANK FLOOR{" "}
             <span>
@@ -116,6 +166,13 @@ function App() {
               {stage === "poster" ? (
                 <>
                   <small>WANTED</small>
+                  {capturedPhoto ? (
+                    <img
+                      src={capturedPhoto}
+                      alt="Captured operative"
+                      className="poster-photo"
+                    />
+                  ) : null}
                   <b>
                     UNKNOWN
                     <br />

@@ -14,6 +14,9 @@ type State = {
   clips: Record<string, string>;
   lowQuality: boolean;
   mock: boolean;
+  cameraEnabled: boolean;
+  cameraStream: MediaStream | null;
+  capturedPhoto: string;
   epoch: number;
   stage: string;
   stageAt: number;
@@ -44,6 +47,9 @@ export const useGame = create<State>(() => ({
   clips: idleClips,
   lowQuality: false,
   mock: import.meta.env.VITE_MOCK !== "0",
+  cameraEnabled: false,
+  cameraStream: null,
+  capturedPhoto: "",
   epoch: 0,
   stage: "idle",
   stageAt: 0,
@@ -68,4 +74,24 @@ export function ingest(event: Event) {
 }
 export function setClips(clips: Record<string, string>) {
   useGame.setState((s) => ({ clips: { ...s.clips, ...clips } }));
+}
+export async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+      audio: false,
+    });
+    useGame.setState({ cameraEnabled: true, cameraStream: stream });
+    return stream;
+  } catch (err) {
+    useGame.setState({ cameraEnabled: false, cameraStream: null });
+    throw err;
+  }
+}
+export function stopCamera() {
+  const s = useGame.getState();
+  if (s.cameraStream) {
+    s.cameraStream.getTracks().forEach((track) => track.stop());
+  }
+  useGame.setState({ cameraEnabled: false, cameraStream: null, capturedPhoto: "" });
 }

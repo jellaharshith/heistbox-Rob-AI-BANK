@@ -1,0 +1,15 @@
+{
+  "name": "heistbox-parity",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Implementation-agnostic parity suite: the same tests run against the baseline Next app (:3000) and the new Vite app (:5173). Set PARITY_BASE_URL.",
+  "scripts": {
+    "test": "playwright test",
+    "test:baseline": "playwright test",
+    "screens": "playwright test --project=screens",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

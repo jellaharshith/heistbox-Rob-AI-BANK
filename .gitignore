@@ -27,3 +27,13 @@ tests/perf/artifacts/
 tests/**/.contract-schema.json
 tests/parity/results/
 tests/parity/debug.log
+*.log
+*.zip
+*.blend1
+*.blend
+*.pdf
+*.npy
+_trash/
+server.*.log
+web.*.log
+

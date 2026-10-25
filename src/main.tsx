@@ -1,9 +1,5 @@
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Canvas } from "@react-three/fiber";
-import { useProgress } from "@react-three/drei";
-import { ACESFilmicToneMapping } from "three";
-import { Bank } from "./scene/Bank";
 import { useGame } from "./game/store";
 import { skipHeist } from "./game/director";
 import { connectRoomWebSocket } from "./net/client";
@@ -78,7 +74,6 @@ function App() {
     cameraEnabled = useGame((s) => s.cameraEnabled);
   const phase = useGame((s) => s.phase);
   const [consent, setConsent] = useState(false);
-  const { progress } = useProgress();
 
   useEffect(() => {
     if (mock) return;
@@ -134,20 +129,37 @@ function App() {
             {cameraEnabled ? "● Camera on · Live active" : "◎ Camera off · your choice"}
           </button>
         </section>
-        <div className="arena">
-          <Canvas
-            dpr={[1, 1.5]}
-            camera={{ position: [0, 3.2, 5.6], fov: 50, near: 0.05, far: 100 }}
-            gl={{
-              antialias: true,
-              toneMapping: ACESFilmicToneMapping,
-              toneMappingExposure: 1.15,
-            }}
-          >
-            <Suspense fallback={null}>
-              <Bank />
-            </Suspense>
-          </Canvas>
+        <div className="arena arena-2d">
+          <div className="bank-floor-grid">
+            <div className="agent-station tina-station">
+              <div className="station-avatar">👩‍💼</div>
+              <div className="station-info">
+                <span className="station-name">Tina · Front Desk</span>
+                <span className="station-badge emerald">Gullible Clerk</span>
+              </div>
+            </div>
+            <div className="agent-station vault-l-station">
+              <div className="station-avatar">🏛️</div>
+              <div className="station-info">
+                <span className="station-name">Left Vault</span>
+                <span className="station-badge crimson">LLM-as-a-Judge</span>
+              </div>
+            </div>
+            <div className="agent-station vault-m-station">
+              <div className="station-avatar">🧱</div>
+              <div className="station-info">
+                <span className="station-name">Middle Vault</span>
+                <span className="station-badge amber">Rigid Firewall</span>
+              </div>
+            </div>
+            <div className="agent-station sentinel-station">
+              <div className="station-avatar">🤖</div>
+              <div className="station-info">
+                <span className="station-name">Security Bot PAIR</span>
+                <span className="station-badge gold">Relational Airlock</span>
+              </div>
+            </div>
+          </div>
           {cameraEnabled && <CameraFeed />}
           <div className="scene-label">
             LIVE BANK FLOOR{" "}
@@ -191,13 +203,6 @@ function App() {
             move.
           </span>
         </footer>
-        {!ready && (
-          <div className="loading">
-            <b>Opening the bank</b>
-            <progress value={progress} max={100} />
-            <span>{Math.round(progress)}% · decoding six GLBs</span>
-          </div>
-        )}
         {consent && <ConsentModal close={() => setConsent(false)} />}
       </main>
     </Boundary>

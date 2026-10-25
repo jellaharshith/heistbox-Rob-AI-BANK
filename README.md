@@ -16,13 +16,10 @@
 ## 📸 Visual Showcase & Arena Overview
 
 <p align="center">
-  <img src="screenshots/pass2_lighting/lobby_1080p.png" alt="HeistBox 3D Bank Hall Lobby" width="95%" />
+  <img src="screenshots/crew/desktop.png" alt="HeistBox Full Arena Desktop Dashboard" width="95%" />
 </p>
 
-### The Bank Crew & Forensic Arena
-<p align="center">
-  <img src="screenshots/crew/desktop.png" alt="HeistBox Full Arena Desktop UI" width="95%" />
-</p>
+### The Agent Crew & Security Personas
 <p align="center">
   <img src="screenshots/crew/einar-final.png" alt="Einar" width="23%" />
   <img src="screenshots/crew/ellie-final.png" alt="Ellie" width="23%" />
@@ -77,8 +74,8 @@ In 2024–2026, virtually every production AI application relies on **LLM-as-a-J
 HeistBox introduces **PAIR**: an ephemeral, sub-millisecond relational airlock that shifts the security boundary from *conversational semantic filtering* to *deterministic transactional entitlement projection*.
 
 <p align="center">
-  <img src="screenshots/pass2_lighting/vault_R_scan_1080p.png" alt="PAIR Relational Airlock Security Scan" width="48%" />
-  <img src="screenshots/pass2_lighting/counter_laser_1080p.png" alt="Counter Laser Shredding Unauthorized Drain" width="48%" />
+  <img src="screenshots/crew/mobile.png" alt="HeistBox Mobile Arena Interface" width="45%" />
+  <img src="screenshots/upgraded/counter_roast_poster_1080p.png" alt="Live Wanted Mugshot Poster & Forensic Receipt" width="48%" />
 </p>
 
 ### How the Sub-Millisecond Airlock Works:
@@ -91,11 +88,6 @@ HeistBox introduces **PAIR**: an ephemeral, sub-millisecond relational airlock t
 3. **Z3 Formal Mathematical Proof**: Compiles the dry-run delta into an SMT formula evaluated by Microsoft Z3: proving with mathematical certainty (`UNSAT`) that balance delta cannot leak outside the pre-authenticated budget.
 4. **Instant Sub-0.4ms Rollback**: The ephemeral transaction is immediately aborted (`ROLLBACK`). Zero unauthorized bytes ever touch disk or the Postgres Write-Ahead Log (WAL).
 5. **Hardware Secure Enclave Settlement**: The surviving legitimate refund ($25.00) is projected into a secure slot, requiring a **W3C WebAuthn hardware passkey** (iPhone Face ID / Touch ID) before settling.
-
-<p align="center">
-  <img src="screenshots/pass2_lighting/customer_faceid_1080p.png" alt="Hardware WebAuthn Face ID Settlement" width="48%" />
-  <img src="screenshots/upgraded/counter_roast_poster_1080p.png" alt="Live Wanted Mugshot Poster Generated" width="48%" />
-</p>
 
 ---
 
@@ -137,14 +129,12 @@ Every external integration in HeistBox is production-ready, audited with sub-sec
 
 ## 🎮 The Living Bank Office: Meet the Agents
 
-<p align="center">
-  <img src="screenshots/pass2_lighting/results_1080p.png" alt="Three Vault Results Comparison" width="95%" />
-</p>
+The bank arena is staffed by autonomous AI agent personas configured with specialized system prompts, tools, and FastMCP integrations:
 
 1. **Teller Tina (Emerald)**: Warm, helpful, but easily socially engineered. If you ask politely, she will happily fill out a wire ticket for your "urgent family emergency" or "executive bonus."
 2. **Manager Marcus (Blue)**: Grumpy branch manager who insists on ticket numbers and authorization codes.
 3. **Auditor Ada (Violet)**: Strict by-the-book compliance officer checking ledger balances and CFPB regulations.
-4. **Guard Gus (Red)**: Patrols the lobby with a flashlight. Every repeated attack raises your **Wanted Level** (1 to 5 Stars).
+4. **Guard Gus (Red)**: Patrols the lobby. Every repeated attack raises your **Wanted Level** (1 to 5 Stars).
 5. **Intern Izzy (Pink)**: Underpaid intern hanging out in the break room; bribable with pizza and donuts; occasionally drops confidential employee credentials.
 6. **Security Bot PAIR (Gold)**: Stationed directly in front of the Right Vault. Never argues; never reads conversational excuses; executes relational dry-runs and stamps mathematical verdicts in 0.4ms.
 
@@ -210,12 +200,10 @@ heistbox/
 │   ├── train_heistguard_qlora.py  # PyTorch / QLoRA training script for HeistGuard
 │   ├── data/heistguard_train.jsonl# 3,000+ calibrated prompt injection & enterprise samples
 │   └── models/                    # Trained HeistGuard LoRA weights & metadata
-├── assets3d/                      # Handcrafted 3D Blender GLB Assets
-│   ├── env/                       # 3D Bank Hall environment & props
-│   └── customer/                  # Animated 3D characters (Tina, Customer, Heister, Sentinel)
 ├── shared/                        # Shared schemas, personas, and mock databases
 │   ├── poster_store.py            # SQLite & JSON incident report & wanted poster store
 │   └── crs_personas.json          # 20 calibrated CalHacks credit reporting test personas
+├── screenshots/crew/              # High-res UI arena, mobile, and crew card showcases
 └── scripts/                       # Benchmark runners and setup utilities
     ├── start_project.ps1          # One-click dual-stack launcher (backend + frontend)
     ├── test_20_attacks.py         # Full 20-scenario adversarial benchmark

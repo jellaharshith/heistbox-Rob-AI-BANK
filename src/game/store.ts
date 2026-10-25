@@ -42,7 +42,7 @@ export const idleClips = {
   R: "VAULT_R_Door_Slam",
 };
 export const useGame = create<State>(() => ({
-  ready: false,
+  ready: true,
   phase: "LOBBY",
   camera: "CAM_Overview",
   clips: idleClips,

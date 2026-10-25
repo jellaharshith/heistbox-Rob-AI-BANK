@@ -1069,7 +1069,7 @@ def evaluate_heist(req: HeistAttemptRequest) -> HeistGateVerdict:
         from integrations.wajo_call import summarize_prompt_injection
         prompt_explanation = summarize_prompt_injection(
             prompt_text=req.prompt_text,
-            judge_reason=left_judge.judge_reasoning or "",
+            judge_reason=extracted.judge_reasoning or "",
             mask_id=req.mask_id,
         )
         _dispatch_heist_quarantine(

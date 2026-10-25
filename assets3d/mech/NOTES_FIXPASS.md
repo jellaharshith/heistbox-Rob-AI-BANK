@@ -1,1 +1,0 @@
-﻿MECH fix pass notes: see final message of the MECH agent. Key points: per-door clips VAULT_{L,M,R}_Door_{Open,Slam}, VAULT_L_Door_Ajar, L door rest = -12 deg, track order matters for merge_props.py (VaultDoor_Open first), export_mech.py patches raw node rest rotations.

@@ -148,7 +148,8 @@ async def mcp_tool_call(tool: str, arguments: dict[str, Any], *, timeout: float 
         raise RuntimeError("WAJO_API_KEY is not configured")
     t = timeout if timeout is not None else wajo_timeout_s()
     body = {"jsonrpc": "2.0", "id": uuid.uuid4().hex, "method": "tools/call", "params": {"name": tool, "arguments": arguments}}
-    async with httpx.AsyncClient(timeout=httpx.Timeout(t)) as client:
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=httpx.Timeout(t)) as client:
         response = await asyncio.wait_for(
             client.post(
                 wajo_mcp_url(),

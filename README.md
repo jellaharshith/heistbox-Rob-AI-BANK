@@ -1,12 +1,7 @@
 # 🏦 BREAK THE VAULT: HEISTBOX × PAIR
 ### The Sub-Millisecond Relational Airlock for Autonomous AI Agents
 
-[![Cal Hacks 13.0](https://img.shields.io/badge/Cal%20Hacks-13.0%20San%20Francisco-gold.svg?style=for-the-badge)](https://calhacks.io)
-[![Formal Proof: Z3 SMT](https://img.shields.io/badge/Formal%20Proof-Z3%20SMT%20Verified-brightgreen.svg?style=for-the-badge)](https://github.com/Z3Prover/z3)
-[![Base Sepolia: x402](https://img.shields.io/badge/Base%20Sepolia-x402%20Escrow-0052FF.svg?style=for-the-badge)](https://sepolia.basescan.org)
 [![FastAPI: 0.115](https://img.shields.io/badge/FastAPI-Async%20Python-009688.svg?style=for-the-badge)](https://fastapi.tiangolo.com)
-[![Next.js: 16](https://img.shields.io/badge/Next.js-16%20Turbopack-black.svg?style=for-the-badge)](https://nextjs.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 > **"Don't filter the prompt. Air-lock the database."**  
 > *Ocean's 11 meets PAIR Enterprise Edition ("Rob Our AI Bank") — An adversarial living bank office staffed by autonomous AI agents where security researchers, red-teamers, and Cal Hacks judges play a heist operative attempting to socially engineer or jailbreak play-money wires in 90 seconds.*
@@ -19,13 +14,6 @@
   <img src="screenshots/crew/desktop.png" alt="HeistBox Full Arena Desktop Dashboard" width="95%" />
 </p>
 
-### The Agent Crew & Security Personas
-<p align="center">
-  <img src="screenshots/crew/einar-final.png" alt="Einar" width="23%" />
-  <img src="screenshots/crew/ellie-final.png" alt="Ellie" width="23%" />
-  <img src="screenshots/crew/rain-final.png" alt="Rain" width="23%" />
-  <img src="screenshots/crew/security-bot-final.png" alt="Security Bot PAIR" width="23%" />
-</p>
 
 ```
                                ┌──────────────────────────────────────────────────────────┐
@@ -73,10 +61,7 @@ In 2024–2026, virtually every production AI application relies on **LLM-as-a-J
 
 HeistBox introduces **PAIR**: an ephemeral, sub-millisecond relational airlock that shifts the security boundary from *conversational semantic filtering* to *deterministic transactional entitlement projection*.
 
-<p align="center">
-  <img src="screenshots/crew/mobile.png" alt="HeistBox Mobile Arena Interface" width="45%" />
-  <img src="screenshots/upgraded/counter_roast_poster_1080p.png" alt="Live Wanted Mugshot Poster & Forensic Receipt" width="48%" />
-</p>
+
 
 ### How the Sub-Millisecond Airlock Works:
 1. **Isolated MVCC Dry-Run**: Every proposed mutation runs inside an ephemeral PostgreSQL transaction (`BEGIN READ WRITE; query_only = ON; SET LOCAL lock_timeout = '25ms'`).

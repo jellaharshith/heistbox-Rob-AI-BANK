@@ -8,12 +8,12 @@ export function Cameras() {
   const env = useAsset("ENV_Bank");
   const camera = useGame((s) => s.camera);
   const controls = useRef<CameraControls>(null);
-  useFrame(({ camera, size }) => {
-    if (!("setViewOffset" in camera)) return;
+  useFrame(({ camera: cam, size }) => {
+    if (!("setViewOffset" in cam)) return;
     const shakeAt = useGame.getState().shakeAt,
       age = performance.now() - shakeAt;
     if (shakeAt && age < 150)
-      camera.setViewOffset(
+      cam.setViewOffset(
         size.width,
         size.height,
         Math.sin(age * 0.15) * 5,
@@ -21,19 +21,32 @@ export function Cameras() {
         size.width,
         size.height,
       );
-    else if (camera.view?.enabled) camera.clearViewOffset();
+    else if (cam.view?.enabled) cam.clearViewOffset();
   });
   useEffect(() => {
     const p = required(env.scene, camera).getWorldPosition(new Vector3());
     // Exported empties carry Blender's Z-up orientation, not a glTF camera -Z axis.
-    const target =
-      camera === "CAM_Overview"
-        ? new Vector3(0, 1, -3.2)
-        : new Vector3(p.x, 1.6, -6.5);
+    const eye = p.clone();
+    let target = new Vector3(0, 1.05, -2.0);
+    if (camera === "CAM_Overview") {
+      eye.set(0, 3.2, 5.6);
+      target.set(0, 1.05, -2.0);
+    } else if (camera === "CAM_VaultL") {
+      eye.set(p.x - 0.2, 1.75, -2.4);
+      target.set(p.x - 0.4, 1.6, -6.1);
+    } else if (camera === "CAM_VaultM") {
+      eye.set(p.x, 1.75, -2.4);
+      target.set(p.x, 1.6, -6.1);
+    } else if (camera === "CAM_VaultR") {
+      eye.set(3.4, 1.85, -2.3);
+      target.set(4.6, 2.0, -5.8);
+    } else {
+      target.set(p.x, 1.6, -6.5);
+    }
     void controls.current?.setLookAt(
-      p.x,
-      p.y,
-      p.z,
+      eye.x,
+      eye.y,
+      eye.z,
       target.x,
       target.y,
       target.z,
@@ -44,7 +57,7 @@ export function Cameras() {
     <CameraControls
       ref={controls}
       makeDefault
-      smoothTime={0.55}
+      smoothTime={0.7}
       enabled={false}
     />
   );

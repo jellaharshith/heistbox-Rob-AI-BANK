@@ -1,7 +1,7 @@
 import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useGame } from "../game/store";
-import { EffectComposer, SelectiveBloom } from "@react-three/postprocessing";
+import { EffectComposer, SelectiveBloom, Vignette } from "@react-three/postprocessing";
 import { useEffect, useState } from "react";
 import { Object3D, Light } from "three";
 export function Effects({ selection }: { selection: Object3D[] }) {
@@ -32,11 +32,12 @@ export function Effects({ selection }: { selection: Object3D[] }) {
             selection={selection}
             lights={lights}
             ignoreBackground
-            luminanceThreshold={0.5}
-            intensity={0.55}
-            mipmapBlur={false}
+            luminanceThreshold={0.4}
+            intensity={1.1}
+            mipmapBlur={true}
             resolutionScale={0.5}
           />
+          <Vignette darkness={0.45} offset={0.35} />
         </EffectComposer>
       )}
     </>

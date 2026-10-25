@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Color, Mesh, MeshStandardMaterial, Material, Vector3 } from "three";
@@ -62,9 +62,12 @@ export function Props() {
       }
     required(root, "PROP_Bill").visible = false;
     required(root, "PROP_Phone").visible = false; // Customer already carries the phone.
-    required(root, "PROP_Terminal").position.set(1.1, 1.15, 0);
-    required(root, "PROP_Megaphone").position.set(2.45, 1.25, -0.1);
-    required(root, "PROP_WantedPoster").position.set(-1.5, 1.2, -0.15);
+    required(root, "PROP_Terminal").position.set(0.9, 1.15, -0.05);
+    required(root, "PROP_Megaphone").position.set(2.2, 1.22, -0.1);
+    const posterObj = required(root, "PROP_WantedPoster");
+    posterObj.position.set(-0.75, 1.22, 0.05);
+    posterObj.rotation.set(-0.15, 0.1, 0);
+    posterObj.scale.setScalar(1.2);
     const cash = required(root, "PROP_CashHeist");
     const dissolve = { value: 0 };
     const owned: MeshStandardMaterial[] = [];
@@ -147,16 +150,23 @@ export function Props() {
       now = performance.now(),
       elapsed = (now - s.stageAt) / 1000;
     const frozen = s.revealed.includes("M");
-    setup.ice.color.copy(setup.originalIce).lerp(setup.color, frozen ? 0.7 : 0);
-    setup.stripM.emissive.set(frozen ? "#ff263e" : "#000000");
+    setup.ice.roughness = 0.18;
+    setup.ice.metalness = 0.1;
+    setup.ice.color.copy(setup.originalIce).lerp(new Color("#6fe2ff"), frozen ? 0.85 : 0);
+    setup.stripM.emissive.set(frozen ? "#ff1a35" : "#000000");
     setup.stripM.emissiveIntensity = frozen
-      ? 2 + Math.sin(now * 0.009) * 1.4
+      ? 3.2 + Math.sin(now * 0.012) * 1.5
       : 0;
-    setup.stripR.emissive.set("#00edff");
+    setup.stripR.emissive.set("#00f5d4");
     setup.stripR.emissiveIntensity = s.revealed.includes("R")
-      ? 2 + Math.sin(now * 0.014)
-      : 0.3;
+      ? 3.0 + Math.sin(now * 0.014) * 1.0
+      : 0.6;
     setup.laser.visible = s.stage === "fire";
+    if (s.stage === "fire") {
+      const pulse = 1 + Math.sin(now * 0.06) * 0.35;
+      setup.laser.scale.y = pulse;
+      setup.laser.scale.z = pulse;
+    }
     const destroying = s.stage === "fire";
     const destroyed = [
       "roast",
@@ -179,7 +189,7 @@ export function Props() {
     setup.small.position.set(0, 1.16, 0);
     if (refund)
       setup.small.position.lerp(
-        new Vector3(-2.6, 1.16, 0.5),
+        new Vector3(-1.15, 1.16, 0.2),
         s.stage === "refund" ? Math.min(1, elapsed / 0.8) : 1,
       );
     setup.poster.visible = [

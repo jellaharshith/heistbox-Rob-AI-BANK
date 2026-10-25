@@ -1,7 +1,8 @@
-﻿import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Canvas } from "@react-three/fiber";
 import { useProgress } from "@react-three/drei";
+import { ACESFilmicToneMapping } from "three";
 import { Bank } from "./scene/Bank";
 import { useGame } from "./game/store";
 import { skipHeist } from "./game/director";
@@ -87,7 +88,12 @@ function App() {
         <div className="arena">
           <Canvas
             dpr={[1, 1.5]}
-            camera={{ position: [0, 3.2, 5.6], fov: 65, near: 0.05, far: 100 }}
+            camera={{ position: [0, 3.2, 5.6], fov: 50, near: 0.05, far: 100 }}
+            gl={{
+              antialias: true,
+              toneMapping: ACESFilmicToneMapping,
+              toneMappingExposure: 1.15,
+            }}
           >
             <Suspense fallback={null}>
               <Bank />

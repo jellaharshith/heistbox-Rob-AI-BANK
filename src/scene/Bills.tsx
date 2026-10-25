@@ -1,4 +1,4 @@
-﻿import { useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { InstancedMesh, Mesh, Object3D } from "three";
 import { useAsset, required } from "./assets";
@@ -34,7 +34,7 @@ export function Bills() {
         -6.1 + p.z * t,
       );
       dummy.rotation.set(p.r + t * 3, p.r + t, p.r + t * 2);
-      dummy.scale.setScalar(1.8);
+      dummy.scale.setScalar(0.85);
       dummy.updateMatrix();
       mesh.current!.setMatrixAt(i, dummy.matrix);
     });

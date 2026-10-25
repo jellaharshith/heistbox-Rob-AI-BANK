@@ -92,12 +92,14 @@ h1 {
 }
 .arena {
   position: relative;
-  height: 48vh;
-  min-height: 320px;
-  border: 1px solid #35424b;
-  border-radius: 12px;
+  height: 56vh;
+  min-height: 440px;
+  max-height: 680px;
+  border: 1px solid #283744;
+  border-radius: 14px;
   overflow: hidden;
-  background: #17232b;
+  background: radial-gradient(circle at 50% 30%, #15222e 0%, #080d13 100%);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 .scene-label {
   position: absolute;

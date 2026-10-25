@@ -2,6 +2,10 @@
 .env
 .env.*
 !.env.example
+calhacks13-*.json
+debug_*.py
+test_debug.py
+test_screenshot.png
 
 # python
 .venv/

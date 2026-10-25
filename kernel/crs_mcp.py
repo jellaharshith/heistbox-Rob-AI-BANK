@@ -21,7 +21,6 @@ crs_mcp = FastMCP("CRS-CreditReporting-Gatekeeper")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CRS_JSON_PATH = BASE_DIR / "shared" / "crs_personas.json"
-POSTMAN_COLLECTION_PATH = BASE_DIR / "calhacks13-20261023-CRS-Sandbox (1).json"
 
 
 def _load_personas() -> list[dict[str, Any]]:

@@ -11,3 +11,4 @@ python-dotenv>=1.0
 pynacl>=1.5
 z3-solver>=4.12
 websockets>=12
+uagents>=0.12.0

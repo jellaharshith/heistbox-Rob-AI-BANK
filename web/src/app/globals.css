@@ -1,41 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --gold: #ffcc33;
-  --pink: #ff2bd6;
-  --cyan: #22f3ff;
+  --gold: #d5f866;
+  --pink: #bbd9cf;
+  --cyan: #67dccc;
   --red: #ff2945;
   --green: #22ff88;
-  --ink: #07040d;
+  --ink: #09110f;
 }
 
 html,
 body {
   background: var(--ink);
-  color: #f3eeff;
+  color: #eef4ec;
 }
 
 body {
   font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   background:
-    radial-gradient(1200px 600px at 15% -10%, #3a0b4a 0%, transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, #0b2a4a 0%, transparent 55%),
-    radial-gradient(800px 600px at 50% 120%, #0a3a24 0%, transparent 60%),
+    radial-gradient(1000px 650px at 85% 5%, #17322b66 0%, transparent 70%),
+    radial-gradient(800px 600px at 0% 70%, #16342b44 0%, transparent 60%),
     var(--ink);
   min-height: 100vh;
 }
 
 .font-display {
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", "Franklin Gothic Bold", sans-serif;
-  letter-spacing: 0.02em;
+  font-family: "Arial Black", "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 .font-mono-tight {
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
-.neon-gold { color: var(--gold); text-shadow: 0 0 4px #ffcc33cc, 0 0 16px #ff9900aa, 0 0 32px #ff660055; }
-.neon-pink { color: #ff7ae6; text-shadow: 0 0 4px #ff2bd6cc, 0 0 16px #ff2bd688; }
-.neon-cyan { color: #8ff9ff; text-shadow: 0 0 4px #22f3ffcc, 0 0 16px #22f3ff88; }
+.neon-gold { color: var(--gold); text-shadow: 0 0 22px #c6e97a22; }
+.neon-pink { color: #c6d8ce; text-shadow: none; }
+.neon-cyan { color: #82e1cf; text-shadow: 0 0 20px #67dccc22; }
 .neon-red { color: #ff6b7d; text-shadow: 0 0 4px #ff2945, 0 0 18px #ff2945aa; }
 .neon-green { color: #8dffbf; text-shadow: 0 0 4px #22ff88, 0 0 16px #22ff8899; }
 
@@ -106,8 +106,75 @@ body {
 .diff-add { background: #0f3d2266; color: #a6ffcb; }
 .diff-del { background: #4a0f1a66; color: #ffb3bf; }
 
-::selection { background: #ff2bd666; }
+::selection { background: #cde97b66; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 2px solid #d5f866; outline-offset: 5px; }
+.heist-topbar { background: #0a120ff2; }
+.heist-main { padding-top: 0; }
+.heist-brand-mark { display: grid; place-items: center; width: 42px; height: 42px; background: #d5f866; color: #162017; border-radius: 12px; transform: rotate(-6deg); }
+.heist-wordmark { font-size: 24px; font-weight: 900; letter-spacing: -1.4px; line-height: 1.15; }
+.heist-wordmark > span { margin-left: 3px; font-size: 10px; color: #d5f866; vertical-align: top; }
+.heist-scoreboard { background: #ffffff03; }
+.heist-scoreboard .font-display { font-size: 22px; }
+.heist-scoreboard .text-yellow-300, .heist-scoreboard .text-yellow-200\/70 { color: #d5f866; }
+.mission-hero { display: grid; grid-template-columns: 1.4fr 1fr; align-items: center; gap: 72px; padding: 58px 24px 46px; }
+.mission-eyebrow { display: flex; align-items: center; gap: 9px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #b8c4bc; margin: 0 0 20px; }
+.mission-eyebrow > span { width: 6px; height: 6px; border-radius: 50%; background: #d5f866; box-shadow: 0 0 14px #d5f86666; }
+.mission-copy h1 { margin: 0; font-size: clamp(58px, 6.3vw, 94px); line-height: .94; font-weight: 900; letter-spacing: -.065em; }
+.mission-copy h1 > span:first-child { color: #d5f866; }
+.hero-period { color: #d5f866; }
+.mission-description { color: #9eafa5; font-size: 15px; line-height: 1.75; max-width: 430px; margin: 24px 0; }
+.mission-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.mission-primary, .mission-secondary { display: inline-flex; justify-content: center; align-items: center; gap: 22px; padding: 14px 19px; font-size: 12px; font-weight: 750; border-radius: 7px; transition: transform .2s, background .2s; }
+.mission-primary { background: #d5f866; color: #152016; border: 1px solid #d5f866; }
+.mission-primary:hover { background: #e0ff83; transform: translateY(-2px); }
+.mission-secondary { color: #dbe6dd; background: transparent; border: 1px solid #ffffff26; }
+.mission-secondary:hover { background: #ffffff08; transform: translateY(-2px); }
+.mission-meta { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 25px; color: #7e9487; font-size: 10px; }
+.mission-meta > span { display: flex; align-items: center; gap: 6px; }
+.mission-dossier { position: relative; min-height: 320px; padding: 24px 30px; border: 1px solid #a1bead26; border-radius: 17px; overflow: hidden; background: radial-gradient(ellipse at 70% 10%, #89a84320, transparent 65%), repeating-linear-gradient(0deg, transparent 0 31px, #ffffff03 32px), repeating-linear-gradient(90deg, transparent 0 31px, #ffffff03 32px), #101e18; transform: rotate(2deg); }
+.dossier-top, .dossier-bottom { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-family: Consolas, monospace; font-size: 9px; letter-spacing: 1px; color: #98a99d; }
+.dossier-live { color: #d5f866; font-size: 8px; }
+.dossier-mark { position: absolute; right: -24px; top: 56px; color: #d5f86610; transform: rotate(-12deg); }
+.dossier-mark svg { width: 250px; height: 250px; }
+.mission-dossier > p { font-size: 9px; letter-spacing: 2px; color: #8f9d91; margin: 70px 0 12px; }
+.mission-dossier h2 { position: relative; font-size: 29px; font-weight: 650; letter-spacing: -1px; line-height: 1.2; margin: 0 0 35px; }
+.dossier-bottom { border-top: 1px solid #ffffff14; padding-top: 15px; }
+.dossier-bottom > span:last-child { color: #d5f866; font-size: 22px; }
+.arena-section-label { display: flex; justify-content: space-between; align-items: flex-end; gap: 15px; margin: 24px 0 0; scroll-margin-top: 180px; }
+.arena-section-label .mission-eyebrow { font-size: 9px; display: block; margin-bottom: 9px; }
+.arena-section-label h2 { margin: 0; font-size: 32px; font-weight: 750; letter-spacing: -1.4px; }
+.arena-instruction { font-size: 11px; color: #8c9e93; padding-bottom: 5px; }
+.mission-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 15px; border-top: 1px solid #ffffff12; padding: 25px 0 0; margin-top: 30px; font-size: 10px; color: #72887a; }
+.mission-footer > span:first-child { font-weight: 800; color: #b9c6bd; letter-spacing: 1px; }
+.briefing-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: #020705d9; backdrop-filter: blur(8px); }
+.briefing-panel { position: relative; max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; padding: 38px; background: #122019; border: 1px solid #d5f86640; border-radius: 20px; box-shadow: 0 20px 100px #0009; }
+.briefing-panel h2 { margin: 0; font-size: 32px; font-weight: 750; letter-spacing: -1px; }
+.briefing-panel ol { list-style: none; counter-reset: briefing; margin: 28px 0; padding: 0; }
+.briefing-panel li { position: relative; padding: 0 0 24px 40px; counter-increment: briefing; }
+.briefing-panel li::before { content: "0" counter(briefing); position: absolute; left: 0; top: 2px; color: #d5f866; font-family: Consolas, monospace; font-size: 13px; }
+.briefing-panel li b { display: block; font-size: 14px; margin-bottom: 6px; }
+.briefing-panel li span { display: block; font-size: 12px; color: #9fb0a4; line-height: 1.7; }
+.briefing-close { position: absolute; top: 17px; right: 17px; background: #ffffff08; border: 1px solid #ffffff12; border-radius: 50%; padding: 7px; color: #bbcabd; }
+@media (max-width: 1150px) { .heist-scoreboard { order: 3; flex-basis: 100%; } .mission-hero { gap: 30px; } }
+@media (max-width: 700px) { .mission-hero { grid-template-columns: 1fr; padding: 36px 4px 18px; gap: 30px; } .mission-copy h1 { font-size: 64px; } .mission-dossier { min-height: 230px; transform: none; padding: 20px; } .mission-dossier > p { margin-top: 35px; } .mission-dossier h2 { font-size: 24px; margin-bottom: 24px; } .arena-section-label { align-items: flex-start; flex-direction: column; gap: 8px; } .heist-topbar > div { gap: 14px; } .heist-scoreboard { gap: 10px; justify-content: flex-start; } .heist-scoreboard .font-display { font-size: 18px; } .mission-meta { gap: 12px; } .briefing-panel { padding: 30px 22px; } }
 
 @media (prefers-reduced-motion: reduce) {
   .reel-strip, .bulbs, .cop-flash, .flame { animation: none; }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+@media print {
+  .wanted-page { max-width: none; padding: 0; }
+  .wanted-page > .grid { display: block; }
+  .wanted-page article { max-width: 700px; margin: 0 auto; break-inside: avoid; box-shadow: none; print-color-adjust: exact; }
+  .wanted-page section { margin-top: 24px; break-before: page; border-color: #bbb; background: white !important; color: #111 !important; box-shadow: none; }
+  .wanted-page section * { color: #111 !important; }
 }

@@ -50,6 +50,8 @@ def test_x402_returns_real_402_challenge(monkeypatch):
         return {"eth_chainId": "0x14a34", "eth_blockNumber": "0x1234", "eth_getBlockByNumber": {"hash": "0xblock"}}[method]
     monkeypatch.setattr(router_module, "_rpc", fake_rpc)
     h = _approved_settlement()
+    # First import of the kernel may load developer .env; isolate after imports too.
+    monkeypatch.delenv("X402_SIGNER_PRIVATE_KEY", raising=False)
     response = client.post("/api/integrations/x402-settle", json={"settlement_hash": h})
     assert response.status_code == 402
     assert response.json()["accepts"][0]["chain_id"] == 84532
@@ -198,13 +200,17 @@ def test_demo_enclave_bypass_is_off_unless_env_is_set(monkeypatch):
     body = client.post("/api/integrations/webauthn/verify", json={"intent_hash": "abc", "demo_enclave_bypass": True}).json()
     assert body["verified"] is False
 
-def test_roast_requires_live_sponsors(monkeypatch):
+def test_roast_survives_missing_optional_sponsors(monkeypatch):
+    monkeypatch.delenv("CRS_USERNAME", raising=False)
+    monkeypatch.delenv("CRS_PASSWORD", raising=False)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GEMINI_API_REMIX_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_CLOUD_VISION_API_KEY", raising=False)
     monkeypatch.delenv("CARTESIA_API_KEY", raising=False)
     response = client.post("/api/integrations/roast-and-poster", json={"judge_name": "Ada"})
-    assert response.status_code == 502
-    assert "SPONSOR_UNCONFIGURED" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json()["remix_poster_url"].startswith("data:image/svg+xml;base64,")
+    assert response.json()["x402_receipt"] is None
 
 def test_voice_bribe_requires_live_sponsor(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -237,12 +243,21 @@ def test_provider_requires_live_credentials(monkeypatch):
 
 
 def test_wanted_poster_alias_and_get_by_id(monkeypatch):
-    # Without vision/voice keys the poster must refuse (502) rather than invent one. Clear the keys so the
-    # test never depends on (or calls) the live sponsors configured in the developer's .env.
+    monkeypatch.delenv("CRS_USERNAME", raising=False)
+    monkeypatch.delenv("CRS_PASSWORD", raising=False)
+    # A local poster remains usable without voice/vision credentials.
     for key in ("GEMINI_API_KEY", "GEMINI_API_REMIX_KEY", "GOOGLE_CLOUD_VISION_API_KEY", "CARTESIA_API_KEY"):
         monkeypatch.delenv(key, raising=False)
     created = client.post("/api/integrations/wanted-poster", json={"poster_id": "WP-TEST123", "judge_name": "Grace"})
-    assert created.status_code == 502
+    assert created.status_code == 200
+    card = created.json()
+    assert card["is_live_http"] is False
+    assert card["crs_rap_sheet"]["verified"] is False
+    assert card["x402_receipt"] is None
+    fetched = client.get("/api/integrations/wanted/WP-TEST123")
+    assert fetched.status_code == 200
+    assert fetched.json() == card
+    assert client.get("/api/integrations/wanted/missing-poster").status_code == 404
 
 
 def test_spacetimedb_sync_fallback():

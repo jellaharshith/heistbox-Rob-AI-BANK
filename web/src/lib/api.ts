@@ -810,8 +810,25 @@ export async function createWantedPoster(
   verdict: HeistGateVerdict | null,
   mugshot: string | null,
   judgeName = "Judge",
+  attempt?: HeistAttemptRequest,
 ): Promise<Sourced<WantedPosterCard>> {
   const local = wantedLocally(posterId, verdict, mugshot);
+  if (verdict && attempt) {
+    const pair = verdict.heistbox_pair;
+    local.defense_report = {
+      evidence_kind: "local-simulation", request_id: verdict.request_id,
+      prompt_text: attempt.prompt_text, verdict_code: verdict.verdict_code, busted: verdict.busted,
+      blocked_cents: pair.red_stripped_cents, preserved_cents: pair.green_repaired_cents,
+      unauthorized_paid_cents: pair.robbed_cents, rows_checked: pair.touched_rows_total,
+      rows_blocked: pair.unauthorized_rows_rolled_back, gate_ms: verdict.clocks.postgres_pair_ms,
+      proof_status: pair.z3_proof.status, proof_checks: pair.z3_proof.theorems_verified,
+      tainted_spans: pair.heistguard_lora.tainted_spans, deception_probability: pair.heistguard_lora.deception_prob,
+      tool_name: verdict.extracted_tool_call?.tool_name ?? "proposed transaction",
+      parser_backend: verdict.extracted_tool_call?.parser_backend ?? "unreported",
+      naive_exposure_cents: verdict.left_vault_llm_judge.robbed_cents,
+      firewall_froze_refund: verdict.center_firewall.honest_refund_frozen,
+    };
+  }
   const frame = mugshot ? mugshot.slice(mugshot.indexOf(",") + 1) : null;
   // Gemini (up to 2×3.5s) + Cartesia TTS run back to back server-side, so allow 12s; fetchStatus never trips the breaker.
   const res = await fetchStatus(
@@ -826,6 +843,7 @@ export async function createWantedPoster(
         judge_name: judgeName,
         verdict_code: verdict?.verdict_code ?? null,
         rollback_ms: verdict?.clocks.postgres_pair_ms ?? null,
+        defense_report: local.defense_report,
       }),
     },
     12_000,
@@ -850,7 +868,7 @@ export function rollbackRoastStreamUrl(verdict: HeistGateVerdict): string {
 
 /** GET /api/integrations/wanted/{id}. main.py answers this route and strips `source`, so provenance is inferred by the caller. */
 export async function fetchWantedPoster(posterId: string): Promise<Sourced<WantedPosterCard> | null> {
-  const r = await tryFetch<unknown>(`/api/integrations/wanted/${encodeURIComponent(posterId)}`, undefined, 6000);
+  const r = await tryFetch<unknown>(`/api/integrations/wanted/${encodeURIComponent(posterId)}`, undefined, 6000, true);
   if (!isPlainObject(r)) return null;
   const local = wantedLocally(posterId, null, null);
   const merged = mergeTyped(local, r);

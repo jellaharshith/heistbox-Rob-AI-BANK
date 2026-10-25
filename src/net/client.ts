@@ -58,14 +58,6 @@ export async function attack(
     return;
   }
 
-  // In automated browser test harness without live Python backend:
-  const isAutomatedTest = typeof navigator !== "undefined" && navigator.webdriver;
-  if (isAutomatedTest) {
-    throw new Error(
-      "Live transport is scheduled for step 5. Press M outside the text box to return to mock mode.",
-    );
-  }
-
   // Live transport integration (step 5)
   try {
     const session = await getOrCreateSession();
@@ -185,6 +177,8 @@ export async function triggerApifyOsint(targetWallet: string) {
 }
 
 export async function triggerWantedPoster(payload: {
+  poster_id?: string;
+  mugshot_data_url?: string;
   webcam_frame_base64?: string;
   judge_name?: string;
   verdict_code?: string;
@@ -194,6 +188,7 @@ export async function triggerWantedPoster(payload: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(12_000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();

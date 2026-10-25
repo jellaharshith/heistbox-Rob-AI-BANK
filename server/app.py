@@ -97,6 +97,32 @@ def fetchai_escrow():
     except Exception as exc:
         return {"agent_address": "agent1qg8y9vg2k3p0d7z4a9u6e2c8x7w5t3l0m9j4", "escrows": [], "count": 0, "error": str(exc)}
 
+class FetchAiReleaseRequest(BaseModel):
+    intent_hash: str
+    released_by: str = "HARDWARE_ENCLAVE_FACE_ID"
+
+@app.post("/api/fetchai/release")
+def fetchai_release(body: FetchAiReleaseRequest):
+    try:
+        from kernel import fetch_guardian
+        result = fetch_guardian.release_escrow(body.intent_hash, body.released_by)
+        if result is None:
+            raise HTTPException(404, f"Escrow {body.intent_hash} not found")
+        room.emit("fetchai_release", result)
+        return {"status": "success", "escrow": result}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+@app.get("/api/fetchai/escrow/{intent_hash}")
+def fetchai_escrow_detail(intent_hash: str):
+    from kernel import fetch_guardian
+    escrow = fetch_guardian.get_escrow(intent_hash)
+    if escrow is None:
+        raise HTTPException(404, f"Escrow {intent_hash} not found")
+    return escrow
+
 @app.get("/api/atlassian/incidents")
 def atlassian_incidents():
     try:

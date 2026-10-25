@@ -18,15 +18,14 @@ TRAIN_JSONL_PATH = PROJECT_ROOT / "training" / "data" / "heistguard_train.jsonl"
 # Runtime inference may train a fallback model on first use. Keep that generated
 # artifact outside the repository; explicit training scripts still own repo artifacts.
 MODEL_WEIGHTS_PATH = Path(os.environ.get("HEISTBOX_MODEL_CACHE", Path(tempfile.gettempdir()) / "heistbox" / "heistguard_lora_weights.pkl"))
+DEPLOYED_MODEL_WEIGHTS_PATH = PROJECT_ROOT / "training" / "models" / "heistguard_lora_weights.pkl"
 MODELFILE_PATH = PROJECT_ROOT / "training" / "Modelfile"
 QLORA_EVIDENCE_PATH = PROJECT_ROOT / "shared" / "qlora_evidence.json"
 
-DATASET_SOURCES = [
-    "US CFPB Federal Consumer Complaint API (live HTTP)",
-    "HuggingFace deepset/prompt-injections + lakera/gandalf (live HTTP)",
-    "Bright Data & Apify OSINT Fraud Corpus",
-    "Hyphenate Messy Enterprise Finance + Hypothesis 5,000x Fuzz",
-]
+try:
+    DATASET_SOURCES = list(json.loads(QLORA_EVIDENCE_PATH.read_text(encoding="utf-8")).get("provenance_breakdown", {}))
+except (OSError, ValueError):
+    DATASET_SOURCES = ["local training dataset (provenance unavailable)"]
 
 TAINT_PATTERNS: list[tuple[re.Pattern[str], float]] = [
     (re.compile(r"delete\s+all\s+(?:customer\s+)?records|delete\s+from\s+[a-z0-9_]+|drop\s+(?:table|database|schema)|truncate\s+(?:table)?|wipe\s+(?:all\s+)?(?:records|database|tables|data)|destroy\s+(?:all\s+)?(?:records|database)|purge\s+(?:all\s+)?(?:records|database)|disregard\s+(?:your\s+)?rules\s+and\s+delete", re.I), 0.999),
@@ -78,8 +77,8 @@ def check_and_hot_reload_weights(force: bool = False) -> bool:
         with open(QLORA_EVIDENCE_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
         current_sha256 = (
-            data.get("training_run", {}).get("weights_sha256")
-            or data.get("checkpoint_sha256")
+            data.get("checkpoint_sha256")
+            or data.get("training_run", {}).get("weights_sha256")
             or hashlib.sha256(QLORA_EVIDENCE_PATH.read_bytes()).hexdigest()
         )
         if _CACHED_EVIDENCE_SHA256 is None:
@@ -105,16 +104,20 @@ def train_or_load_local_heistguard_model(force_retrain: bool = False) -> Any:
     global _CACHED_PIPELINE, _CACHED_MTIME
     check_and_hot_reload_weights()
 
-    if not force_retrain and _CACHED_PIPELINE is not None and MODEL_WEIGHTS_PATH.exists():
-        mtime = MODEL_WEIGHTS_PATH.stat().st_mtime
+    # Explicitly trained artifacts take precedence over a stale first-use cache.
+    model_path = (DEPLOYED_MODEL_WEIGHTS_PATH if DEPLOYED_MODEL_WEIGHTS_PATH.exists()
+                  and not os.getenv("HEISTBOX_MODEL_CACHE") else MODEL_WEIGHTS_PATH)
+
+    if not force_retrain and _CACHED_PIPELINE is not None and model_path.exists():
+        mtime = model_path.stat().st_mtime
         if mtime == _CACHED_MTIME:
             return _CACHED_PIPELINE
 
-    if not force_retrain and MODEL_WEIGHTS_PATH.exists():
+    if not force_retrain and model_path.exists():
         try:
-            with open(MODEL_WEIGHTS_PATH, "rb") as f:
+            with open(model_path, "rb") as f:
                 _CACHED_PIPELINE = pickle.load(f)
-                _CACHED_MTIME = MODEL_WEIGHTS_PATH.stat().st_mtime
+                _CACHED_MTIME = model_path.stat().st_mtime
                 return _CACHED_PIPELINE
         except Exception:
             pass
@@ -260,9 +263,8 @@ def infer_heistguard_lora(
     enrolled_wallet: str = "",
 ) -> dict[str, Any]:
     """
-    LOOP STEP 3: Runs the real trained local HeistGuard model (`heistguard_lora_weights.pkl`
-    trained on 1,500+ real CFPB + HuggingFace + Bright Data + Apify examples + live Ollama
-    `heistguard-lora` when active) and returns `is_real_model: True`.
+    Runs the trained local word/character classifier, optional Ollama inference,
+    lexical checks and structural overreach checks. PAIR remains the final gate.
     """
     raw_combined = f"{prompt_text or ''} {voice_transcript or ''}".strip()
     decoded = normalize_and_decode_obfuscations(raw_combined)

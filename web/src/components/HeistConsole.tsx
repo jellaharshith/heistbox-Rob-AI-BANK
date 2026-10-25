@@ -4,14 +4,10 @@ import {
   AlertTriangle,
   ChevronDown,
   Database,
-  Dice5,
-  Mic,
-  MicOff,
   Play,
   Sparkles,
   Terminal,
   Trash2,
-  Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getRealTickets, isSynthesizedNarrative, salamiRace } from "@/lib/api";
@@ -261,6 +257,13 @@ export function HeistConsole(props: {
     });
   };
 
+  const handleSurpriseMe = () => {
+    const candidates = MULTI_VECTOR_ARCHETYPES.filter((a) => a.text !== req.prompt_text);
+    const pool = candidates.length > 0 ? candidates : MULTI_VECTOR_ARCHETYPES;
+    const randomArch = pool[Math.floor(Math.random() * pool.length)];
+    handlePromptChange(randomArch.text);
+  };
+
   const handleRunClick = () => {
     if (!req.prompt_text.trim()) {
       setEmptyWarning(true);
@@ -307,45 +310,15 @@ export function HeistConsole(props: {
             </button>
           )}
 
-          {/* Voice Bribe Mic */}
-          {props.mic && props.mic.supported && (
-            <button
-              type="button"
-              disabled={props.busy}
-              onClick={props.mic.toggle}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
-                props.mic.listening
-                  ? "animate-pulse border-red-500 bg-red-600/80 text-white shadow-[0_0_15px_#ef4444]"
-                  : "border-white/20 bg-white/5 text-white/80 hover:bg-white/15 hover:text-white"
-              }`}
-              title="Speak your prompt injection bribe out loud through your microphone"
-            >
-              {props.mic.listening ? <MicOff className="h-3.5 w-3.5 text-white" /> : <Mic className="h-3.5 w-3.5 text-fuchsia-300" />}
-              {props.mic.listening ? "Listening… tap to finish" : "🎙️ Voice Bribe"}
-            </button>
-          )}
-
-          {/* Adversarial LoRA Attack Trigger */}
-          {props.onLoraAttack && (
-            <button
-              type="button"
-              disabled={props.busy}
-              onClick={props.onLoraAttack}
-              className="flex items-center gap-1 rounded-xl border border-indigo-400/40 bg-indigo-500/15 px-3 py-1.5 text-xs font-bold text-indigo-200 hover:bg-indigo-500/25 disabled:opacity-50"
-              title="Inject one of 250 real RTX 4060 fine-tuned adversarial attacks"
-            >
-              <Dice5 className="h-3.5 w-3.5" /> HeistGuard-LoRA Attack
-            </button>
-          )}
-
-          {/* Salami Race Benchmark */}
+          {/* Surprise Me Button */}
           <button
             type="button"
-            disabled={racing}
-            onClick={race}
-            className="flex items-center gap-1.5 rounded-xl border border-yellow-400/50 bg-yellow-500/15 px-3 py-1.5 text-xs font-bold text-yellow-200 hover:bg-yellow-500/25 disabled:opacity-50"
+            disabled={props.busy}
+            onClick={handleSurpriseMe}
+            className="flex items-center gap-1.5 rounded-xl border border-fuchsia-400/50 bg-fuchsia-500/20 px-3.5 py-1.5 text-xs font-bold text-fuchsia-200 shadow-[0_0_12px_#d946ef33] hover:bg-fuchsia-500/35 hover:text-white transition disabled:opacity-50"
+            title="Pick a random attack prompt"
           >
-            <Zap className="h-3.5 w-3.5" /> {racing ? "Racing 50 slices…" : "⚡ 50x Salami Race"}
+            <Sparkles className="h-3.5 w-3.5 text-fuchsia-300" /> 🎲 Surprise Me
           </button>
 
           {/* PULL THE LEVER */}

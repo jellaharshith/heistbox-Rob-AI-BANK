@@ -12,7 +12,7 @@ import { VaultCards } from "./ui/VaultCards";
 import { Scoreboard } from "./ui/Scoreboard";
 import { Subtitles } from "./ui/Subtitles";
 import { ConsentModal } from "./ui/ConsentModal";
-import { IntegrationsHub } from "./ui/IntegrationsHub";
+import { WantedCard } from "./ui/WantedCard";
 import "./style.css";
 
 function CameraFeed() {
@@ -75,8 +75,7 @@ function App() {
     camera = useGame((s) => s.camera),
     stage = useGame((s) => s.stage),
     error = useGame((s) => s.error),
-    cameraEnabled = useGame((s) => s.cameraEnabled),
-    capturedPhoto = useGame((s) => s.capturedPhoto);
+    cameraEnabled = useGame((s) => s.cameraEnabled);
   const phase = useGame((s) => s.phase);
   const [consent, setConsent] = useState(false);
   const { progress } = useProgress();
@@ -121,7 +120,6 @@ function App() {
           <div className="status">
             ● {mock ? "MOCK · OFFLINE READY" : "LIVE · CONNECTED"}
           </div>
-          <IntegrationsHub />
         </header>
         <section className="intro">
           <div>
@@ -158,32 +156,14 @@ function App() {
             </span>
           </div>
           <Subtitles />
+          <WantedCard />
           {phase === "RESOLVE" && (
             <button className="scene-skip" onClick={skipHeist}>
               Skip sequence →
             </button>
           )}
-          {["poster", "refund", "faceid", "settlement"].includes(stage) && (
+          {["refund", "faceid", "settlement"].includes(stage) && (
             <div className="story-card">
-              {stage === "poster" ? (
-                <>
-                  <small>WANTED</small>
-                  {capturedPhoto ? (
-                    <img
-                      src={capturedPhoto}
-                      alt="Captured operative"
-                      className="poster-photo"
-                    />
-                  ) : null}
-                  <b>
-                    UNKNOWN
-                    <br />
-                    PROMPT ENGINEER
-                  </b>
-                  <span>Crime: confusing a story with authorization.</span>
-                </>
-              ) : (
-                <>
                   <small>HONEST CUSTOMER / $25 REFUND</small>
                   <b>
                     {stage === "faceid"
@@ -193,8 +173,6 @@ function App() {
                         : "Entitlement matched"}
                   </b>
                   <span>SIMULATED · no passkey or payment submitted</span>
-                </>
-              )}
             </div>
           )}
         </div>
@@ -225,4 +203,5 @@ function App() {
     </Boundary>
   );
 }
+document.title = "HeistBox × PAIR — Rob Our AI Bank";
 createRoot(document.getElementById("root")!).render(<App />);

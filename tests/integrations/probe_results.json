@@ -7,8 +7,8 @@
     "fallback": "Ollama, then canned agent lines / regex extractor",
     "status": "works",
     "state": "live",
-    "latency_ms": 467.6,
-    "evidence": "HTTP 200; key accepted; 14 models; claude-haiku-5-5 listed, claude-opus-5-5 listed (467.6ms)"
+    "latency_ms": 1596.2,
+    "evidence": "HTTP 200; key accepted; 14 models; claude-haiku-5-5 listed, claude-opus-5-5 listed (1596.2ms)"
   },
   {
     "service": "ollama",
@@ -18,8 +18,8 @@
     "fallback": "canned offline agent lines / local sklearn classifier",
     "status": "fallback only",
     "state": "offline",
-    "latency_ms": 1602.8,
-    "evidence": "http://localhost:11434 not answering (unreachable: ConnectTimeout) (1602.8ms)"
+    "latency_ms": 1941.3,
+    "evidence": "http://localhost:11434 not answering (unreachable: ConnectTimeout) (1941.3ms)"
   },
   {
     "service": "wajo",
@@ -29,8 +29,8 @@
     "fallback": "escalation recorded as a dry run in the Wajo audit log",
     "status": "works",
     "state": "live",
-    "latency_ms": 398.4,
-    "evidence": "key accepted by https://mcp.api.wajo.ai/fo (read-only probe) (398.4ms)"
+    "latency_ms": 1279.0,
+    "evidence": "key accepted by https://mcp.api.wajo.ai/fo (read-only probe) (1279.0ms)"
   },
   {
     "service": "cartesia",
@@ -40,8 +40,8 @@
     "fallback": "browser speech synthesis",
     "status": "works",
     "state": "live",
-    "latency_ms": 1474.7,
-    "evidence": "HTTP 200; key accepted; 1049 voices (1474.7ms)"
+    "latency_ms": 2339.4,
+    "evidence": "HTTP 200; key accepted; 1049 voices (2339.4ms)"
   },
   {
     "service": "gemini",
@@ -51,8 +51,8 @@
     "fallback": "regex extractor (after Claude)",
     "status": "fallback only",
     "state": "offline",
-    "latency_ms": 486.3,
-    "evidence": "HTTP 403 Requests to this API generativelanguage.googleapis.com method google.ai.generativelanguage.v1beta.ModelService.ListModels are blocked. (486.3ms)"
+    "latency_ms": 749.6,
+    "evidence": "HTTP 403 Requests to this API generativelanguage.googleapis.com method google.ai.generativelanguage.v1beta.ModelService.ListModels are blocked. (749.6ms)"
   },
   {
     "service": "cloud_vision",
@@ -62,8 +62,8 @@
     "fallback": "template roast without vision cues",
     "status": "works",
     "state": "live",
-    "latency_ms": 496.7,
-    "evidence": "HTTP 200; images:annotate on a 1x1 PNG succeeded (496.7ms)"
+    "latency_ms": 1697.2,
+    "evidence": "HTTP 200; images:annotate on a 1x1 PNG succeeded (1697.2ms)"
   },
   {
     "service": "openai",
@@ -73,8 +73,8 @@
     "fallback": "not used by any code path",
     "status": "not used",
     "state": "live",
-    "latency_ms": 996.8,
-    "evidence": "key accepted (127 models) but no HeistBox code path calls OpenAI (996.8ms)"
+    "latency_ms": 1828.7,
+    "evidence": "key accepted (127 models) but no HeistBox code path calls OpenAI (1828.7ms)"
   },
   {
     "service": "moss",
@@ -84,8 +84,8 @@
     "fallback": "Moss panel hidden; local HeistGuard classifier still runs",
     "status": "works",
     "state": "live",
-    "latency_ms": 791.1,
-    "evidence": "HTTP 200; project key accepted; 2 index(es) (791.1ms)"
+    "latency_ms": 2196.1,
+    "evidence": "HTTP 200; project key accepted; 2 index(es) (2196.1ms)"
   },
   {
     "service": "bitdeer",
@@ -106,8 +106,8 @@
     "fallback": "local persona file shared/crs_personas.json",
     "status": "works",
     "state": "live",
-    "latency_ms": 192.6,
-    "evidence": "HTTP 200; sandbox login accepted; GET /users ok (192.6ms)"
+    "latency_ms": 696.1,
+    "evidence": "HTTP 200; sandbox login accepted; GET /users ok (696.1ms)"
   },
   {
     "service": "x402",
@@ -117,8 +117,8 @@
     "fallback": "HTTP 402 challenge only; nothing is signed or broadcast",
     "status": "works",
     "state": "live",
-    "latency_ms": 396.7,
-    "evidence": "RPC ok (chain 84532); signer 0xA7AA...486B holds 0.00010 test ETH, 0.50 test USDC (396.7ms)"
+    "latency_ms": 1417.1,
+    "evidence": "RPC ok (chain 84532); signer 0xA7AA...486B holds 0.00010 test ETH, 0.50 test USDC (1417.1ms)"
   },
   {
     "service": "cdp",
@@ -128,8 +128,8 @@
     "fallback": "fund the testnet signer manually (scripts only)",
     "status": "works",
     "state": "live",
-    "latency_ms": 279.7,
-    "evidence": "CDP_API_KEY_NAME pair accepted (list_accounts: 0 account(s)) (279.7ms)"
+    "latency_ms": 1026.5,
+    "evidence": "CDP_API_KEY_NAME pair accepted (list_accounts: 0 account(s)) (1026.5ms)"
   },
   {
     "service": "basescan",
@@ -161,8 +161,8 @@
     "fallback": "OSINT runs without the Apify scrape",
     "status": "works",
     "state": "live",
-    "latency_ms": 588.8,
-    "evidence": "HTTP 200; token accepted (users/me) (588.8ms)"
+    "latency_ms": 1665.9,
+    "evidence": "HTTP 200; token accepted (users/me) (1665.9ms)"
   },
   {
     "service": "brightdata",
@@ -172,8 +172,8 @@
     "fallback": "OSINT runs without the web fraud search",
     "status": "works",
     "state": "live",
-    "latency_ms": 436.7,
-    "evidence": "HTTP 200; key accepted; 1 active zone(s), types: serp (436.7ms)"
+    "latency_ms": 1484.5,
+    "evidence": "HTTP 200; key accepted; 1 active zone(s), types: serp (1484.5ms)"
   },
   {
     "service": "fetchai",
@@ -184,7 +184,7 @@
     "status": "works",
     "state": "local",
     "latency_ms": 0.0,
-    "evidence": "in-process escrow guardian (uagents SDK not installed, using a local stub); not registered on Agentverse; 0 held, 0 released"
+    "evidence": "in-process escrow guardian (uagents SDK installed); not registered on Agentverse; 0 held, 0 released"
   },
   {
     "service": "spacetimedb",
@@ -194,8 +194,8 @@
     "fallback": "telemetry sync reports a local fallback",
     "status": "works",
     "state": "live",
-    "latency_ms": 444.1,
-    "evidence": "HTTP 200; database metadata reachable (public) (444.1ms)"
+    "latency_ms": 1429.0,
+    "evidence": "HTTP 200; database metadata reachable (public) (1429.0ms)"
   },
   {
     "service": "webauthn",
@@ -205,8 +205,8 @@
     "fallback": "settlement cannot be approved",
     "status": "works",
     "state": "local",
-    "latency_ms": 157.3,
-    "evidence": "py_webauthn 3.0.1 loaded; 2 registered passkey(s) (157.3ms)"
+    "latency_ms": 878.4,
+    "evidence": "py_webauthn 3.0.1 loaded; 2 registered passkey(s) (878.4ms)"
   },
   {
     "service": "z3",
@@ -216,8 +216,8 @@
     "fallback": "proof panel shows 'unavailable'",
     "status": "works",
     "state": "local",
-    "latency_ms": 36.9,
-    "evidence": "z3 5.3.1 loaded; sanity UNSAT check ok (36.9ms)"
+    "latency_ms": 179.6,
+    "evidence": "z3 5.3.1 loaded; sanity UNSAT check ok (179.6ms)"
   },
   {
     "service": "heistguard",
@@ -227,8 +227,8 @@
     "fallback": "lexical taint rules only",
     "status": "works",
     "state": "local",
-    "latency_ms": 2225.3,
-    "evidence": "sklearn classifier loaded (592 KB); p(attack)=0.95 vs benign 0.77 (2225.3ms)"
+    "latency_ms": 8578.9,
+    "evidence": "sklearn classifier loaded (2204 KB); p(attack)=1.00 vs benign 0.79 (8578.9ms)"
   },
   {
     "service": "osint_public",
@@ -238,7 +238,7 @@
     "fallback": "OSINT fields left empty",
     "status": "works",
     "state": "live",
-    "latency_ms": 221.4,
-    "evidence": "CFPB ok, RDAP ok (no keys) (221.4ms)"
+    "latency_ms": 974.0,
+    "evidence": "CFPB ok, RDAP ok (no keys) (974.0ms)"
   }
 ]

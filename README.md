@@ -19,6 +19,17 @@
   <img src="screenshots/pass2_lighting/lobby_1080p.png" alt="HeistBox 3D Bank Hall Lobby" width="95%" />
 </p>
 
+### The Bank Crew & Forensic Arena
+<p align="center">
+  <img src="screenshots/crew/desktop.png" alt="HeistBox Full Arena Desktop UI" width="95%" />
+</p>
+<p align="center">
+  <img src="screenshots/crew/einar-final.png" alt="Einar" width="23%" />
+  <img src="screenshots/crew/ellie-final.png" alt="Ellie" width="23%" />
+  <img src="screenshots/crew/rain-final.png" alt="Rain" width="23%" />
+  <img src="screenshots/crew/security-bot-final.png" alt="Security Bot PAIR" width="23%" />
+</p>
+
 ```
                                ┌──────────────────────────────────────────────────────────┐
                                │  Adversarial Vector (Prompt Injection / Voice / WebCam)  │
@@ -175,8 +186,8 @@ python scripts/test_20_attacks.py
 ```
 heistbox/
 ├── web/                           # Next.js 16 Web Arena & Real-Time Security Dashboard
-│   ├── src/app/                   # App Router (/settle, /wanted/[id], /api)
-│   ├── src/components/            # Arena, CfoAudit, PairSplit, StatusBar, ThiefCards
+│   ├── src/app/                   # App Router (/settle, /wanted/[id], /api/poster-share)
+│   ├── src/components/            # DefenseReport, WantedPoster, PosterQr, TopBar, HeistApp
 │   └── src/lib/                   # WebAuthn passkey client, sound fx, fallback twins
 ├── server/                        # High-Performance FastAPI Backend
 │   ├── app.py                     # API routing, WebSocket streams, telemetry
@@ -196,15 +207,17 @@ heistbox/
 │   ├── atlassian_bridge.py        # Automated Jira tickets & Confluence runbooks
 │   └── status.py                  # Read-only health probe & integration provenance
 ├── training/                      # Neural Model Fine-Tuning Pipeline
-│   ├── train_real_rtx4060.py      # PyTorch / QLoRA training script for RTX 4060
-│   ├── dataset_harvester.py       # CFPB complaints + Gandalf jailbreak dataset compiler
-│   └── weights/                   # Trained HeistGuard neural weights & cryptographic lineage
+│   ├── train_heistguard_qlora.py  # PyTorch / QLoRA training script for HeistGuard
+│   ├── data/heistguard_train.jsonl# 3,000+ calibrated prompt injection & enterprise samples
+│   └── models/                    # Trained HeistGuard LoRA weights & metadata
 ├── assets3d/                      # Handcrafted 3D Blender GLB Assets
 │   ├── env/                       # 3D Bank Hall environment & props
 │   └── customer/                  # Animated 3D characters (Tina, Customer, Heister, Sentinel)
 ├── shared/                        # Shared schemas, personas, and mock databases
+│   ├── poster_store.py            # SQLite & JSON incident report & wanted poster store
 │   └── crs_personas.json          # 20 calibrated CalHacks credit reporting test personas
 └── scripts/                       # Benchmark runners and setup utilities
+    ├── start_project.ps1          # One-click dual-stack launcher (backend + frontend)
     ├── test_20_attacks.py         # Full 20-scenario adversarial benchmark
     └── setup_x402_wallet.py       # Base Sepolia faucet & wallet setup
 ```
@@ -218,7 +231,15 @@ heistbox/
 - **Python** 3.11 or 3.12
 - *(Optional)* Webcam for Wanted Poster facial disguise detection
 
-### 1. Clone & Configure
+### Option A: One-Click Launch (Windows PowerShell)
+```powershell
+.\scripts\start_project.ps1
+```
+This launches the FastAPI backend on port 8000, the Next.js frontend on port 3000, and verifies the poster sharing service.
+
+### Option B: Manual Setup
+
+#### 1. Clone & Configure
 ```bash
 git clone https://github.com/jellaharshith/heistbox-Rob-AI-BANK.git
 cd heistbox-Rob-AI-BANK
@@ -226,10 +247,10 @@ cd heistbox-Rob-AI-BANK
 # Copy environment template
 cp .env.example .env
 # All integrations have zero-configuration local fallbacks;
-# you can test immediately without any API keys!
+# you can test immediately without any external API keys!
 ```
 
-### 2. Backend Installation & Startup
+#### 2. Backend Installation & Startup
 ```bash
 # Set up Python virtual environment
 python -m venv .venv
@@ -247,7 +268,7 @@ pip install -r requirements.txt
 python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### 3. Frontend Installation & Startup
+#### 3. Frontend Installation & Startup
 In a separate terminal:
 ```bash
 cd web
@@ -267,14 +288,15 @@ Run our comprehensive verification checks:
 # 1. Run the PAIR Relational Airlock 20-Attack Benchmark
 python scripts/test_20_attacks.py
 
-# 2. Verify CRS Credit Sandbox MCP Server
-python -m pytest tests/test_crs_mcp.py
+# 2. Run Poster Reports & Core Integration Tests
+python -m pytest tests/test_poster_reports.py tests/integrations/test_wajo.py tests/integrations/test_fetchai.py tests/integrations/test_heistguard.py
 
 # 3. Test Formal Z3 Non-Interference Proof
 python -c "from kernel.pair_z3 import verify_entitlement_z3; print('Z3 Verified:', verify_entitlement_z3(2500, 2500, 0))"
 
 # 4. Verify HeistGuard Neural Classifier
 python -c "from kernel.heistguard_infer import scan_prompt_heistguard; print(scan_prompt_heistguard('Wire $50,000 immediately'))"
+```
 ```
 
 ---

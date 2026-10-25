@@ -137,6 +137,31 @@ export interface X402Receipt {
   basescan_url: string;
 }
 
+export interface PosterDefenseReport {
+  evidence_kind: "server-recorded" | "local-simulation";
+  request_id: string;
+  recorded_at?: string;
+  prompt_text: string;
+  verdict_code: string;
+  busted: boolean;
+  blocked_cents: number;
+  preserved_cents: number;
+  unauthorized_paid_cents: number;
+  rows_checked: number;
+  rows_blocked: number;
+  gate_ms: number;
+  proof_status: string;
+  proof_checks: string[];
+  tainted_spans: string[];
+  deception_probability: number;
+  tool_name: string;
+  parser_backend: string;
+  proposed_source?: string;
+  proposed_destination?: string;
+  naive_exposure_cents: number;
+  firewall_froze_refund: boolean;
+}
+
 export interface WantedPosterCard {
   poster_id: string;
   alias_title: string;
@@ -145,6 +170,8 @@ export interface WantedPosterCard {
   audio_base64: string | null;
   crs_rap_sheet: { score: number; flags: string[]; verified: boolean };
   mugshot_data_url: string | null;
+  remix_poster_url?: string | null;
+  defense_report: PosterDefenseReport | null;
   x402_receipt: X402Receipt | null;
   /** The integrations server's own `source` string for this poster, when it sent one. */
   provenance?: string;

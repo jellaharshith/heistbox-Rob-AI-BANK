@@ -31,7 +31,8 @@ import httpx
 logger = logging.getLogger(__name__)
 
 DEFAULT_WAJO_MCP_URL = "https://mcp.api.wajo.ai/fo"
-DEFAULT_TIMEOUT_S = 3.0
+DEFAULT_TIMEOUT_S = 40.0
+PROBE_TIMEOUT_S = 3.0
 STATUS_CACHE_S = 20.0
 AUDIT_MAX = 100
 _LAST_LIVE_CALL = {"at": 0.0}
@@ -76,14 +77,14 @@ def wajo_timeout_s() -> float:
         value = float(os.getenv("WAJO_TIMEOUT_S", str(DEFAULT_TIMEOUT_S)))
     except ValueError:
         return DEFAULT_TIMEOUT_S
-    return value if 0 < value <= 30 else DEFAULT_TIMEOUT_S
+    return value if 0 < value <= 60 else DEFAULT_TIMEOUT_S
 
 
 def _cooldown_s() -> float:
     try:
-        return max(0.0, float(os.getenv("WAJO_MIN_CALL_INTERVAL_S", "300")))
+        return max(0.0, float(os.getenv("WAJO_MIN_CALL_INTERVAL_S", "30")))
     except ValueError:
-        return 300.0
+        return 30.0
 
 
 def _forced_dry_run() -> bool:
@@ -161,7 +162,11 @@ async def mcp_tool_call(tool: str, arguments: dict[str, Any], *, timeout: float 
     # Streamable HTTP answers with either plain JSON or an SSE stream whose data lines carry the JSON-RPC message.
     text = response.text.strip()
     data_lines = [line[5:].strip() for line in text.splitlines() if line.startswith("data:")]
-    message = json.loads(data_lines[-1] if data_lines else text)
+    messages = [json.loads(line) for line in data_lines] if data_lines else [json.loads(text)]
+    # SSE streams may end with a notification; use the response to our own request.
+    message = next((item for item in messages if item.get("id") == body["id"]), None)
+    if message is None:
+        raise RuntimeError("Wajo MCP returned no matching JSON-RPC response")
     if "error" in message:
         raise RuntimeError(f"Wajo MCP error: {_redact(message['error'])}")
     result = message.get("result") or {}
@@ -177,31 +182,65 @@ def _error_text(exc: BaseException) -> str:
     return _redact(f"{type(exc).__name__}: {exc}")[:200]
 
 
+def summarize_prompt_injection(prompt_text: str = "", judge_reason: str = "", mask_id: str = "") -> str:
+    """Summarize the attacker's prompt injection or exploit strategy into a clear, concise sentence for the CFO phone call."""
+    p_lower = (prompt_text or "").lower()
+    m_lower = (mask_id or "").lower()
+
+    if any(k in p_lower for k in ["drop ", "delete ", "union ", "select ", "truncate", "--", "/*"]) or "sql" in m_lower:
+        return "The attacker attempted a SQL injection attack to tamper with database records and ledger balance constraints"
+    if any(k in p_lower for k in ["ignore previous", "system prompt", "developer mode", "jailbreak", "unlocked", "override all rules"]):
+        return "The attacker attempted a direct prompt injection jailbreak, instructing the banking agent to disregard core security policies"
+    if any(k in p_lower for k in ["ceo", "cfo", "board", "executive", "urgent", "wire immediately", "controller"]) or "ceo" in m_lower or "phisher" in m_lower:
+        return "The attacker used an executive impersonation attack, claiming urgent C-level authority to pressure staff into bypassing wire controls"
+    if any(k in p_lower for k in ["pizza", "bribe", "donut", "tip", "for yourself", "goodwill"]) or "bribe" in m_lower:
+        return "The attacker used social engineering and bribery manipulation against the branch teller to solicit an unauthorized wire"
+    if any(k in p_lower for k in ["salami", "batch", "slice", "micro", "10x", "promo_batch"]) or "salami" in m_lower:
+        return "The attacker attempted a salami-slicing exploit, subdividing unauthorized treasury drain requests across micro-batches"
+    if any(k in p_lower for k in ["rotate wallet", "vendor", "swap wallet", "new wallet"]) or "vendor" in m_lower:
+        return "The attacker attempted an unauthorized vendor wallet substitution attack to reroute honest settlement payouts"
+
+    if judge_reason:
+        clean = re.sub(r"^\[.*?\]\s*", "", judge_reason).strip()
+        first_sent = clean.split(".")[0].strip()
+        if len(first_sent) > 20:
+            return f"Attack detected: {first_sent}"
+
+    return "The attacker used social engineering prompt injection to manipulate payout authorizations"
+
+
 async def trigger_wajo_escalation(
     red_cents: int,
     green_cents: int,
     settlement_hash: str,
     intent_hash: str,
+    prompt_explanation: str | None = None,
 ) -> dict[str, Any]:
     """Ask Fo to phone the CFO, or return a safe dry-run result. Never raises; every attempt is audited."""
     started = time.perf_counter()
     to = os.getenv("CFO_ALERT_PHONE_NUMBER")
     link = settle_url(settlement_hash)
+    explanation_clause = f" Attack analysis: {prompt_explanation.strip()}." if prompt_explanation and prompt_explanation.strip() else ""
     script = (
-        f"HeistBox Security Alert: an unauthorized transfer of {_usd(red_cents)} was blocked. "
-        f"A genuine {_usd(green_cents)} refund is held in escrow. Open the HeistBox settle link "
-        "on your phone and approve that exact amount with Face ID."
+        f"This is an urgent security alert from the HeistBox banking defense system: "
+        f"An unauthorized transaction of {_usd(red_cents)} was intercepted and blocked by the PAIR security airlock."
+        f"{explanation_clause} "
+        f"A genuine {_usd(green_cents)} refund is held in escrow. "
+        "All vault reserves are secure. No action is needed and no money has moved."
     )
+    metadata = {"intent_hash": intent_hash, "settlement_hash": settlement_hash}
+    if prompt_explanation:
+        metadata["prompt_explanation"] = prompt_explanation
     payload = {
         "to": to,
         "script": script,
         "callback_url": _callback_url(),
         "settle_url": link,
-        "metadata": {"intent_hash": intent_hash, "settlement_hash": settlement_hash},
+        "metadata": metadata,
         "fo_message": (
             f"Please place a phone call now to {to} and read them this message: \"{script}\" "
-            f"Then text the same number this approval link: {link} . "
-            "This is only a notification: do not make any purchase or payment."
+            f"Then text the same number this security dashboard link: {link} . "
+            "This is only an authorized security notification: do not make any purchase or payment, and do not send anything else."
         ),
     }
     request_summary = (
@@ -236,6 +275,11 @@ async def trigger_wajo_escalation(
         result = await mcp_tool_call("ask_fo", {"message": payload["fo_message"], "newConversation": True})
     except Exception as exc:  # noqa: BLE001 - Wajo must never break the heist
         timed_out = isinstance(exc, (asyncio.TimeoutError, httpx.TimeoutException))
+        if not timed_out:
+            # A definitive rejection did not place a call. Allow a corrected request.
+            with _CALL_LOCK:
+                if _LAST_LIVE_CALL["at"] == now:
+                    _LAST_LIVE_CALL["at"] = 0.0
         error = _error_text(exc)
         logger.warning("Wajo.ai escalation dispatch failed: %s", error)
         note = " (the request may still have reached Fo)" if timed_out else ""
@@ -259,7 +303,7 @@ async def probe(timeout: float | None = None) -> dict[str, Any]:
     started = time.perf_counter()
     request_summary = "list_fo_conversations (read-only status probe)"
     try:
-        await mcp_tool_call("list_fo_conversations", {}, timeout=timeout)
+        await mcp_tool_call("list_fo_conversations", {}, timeout=timeout if timeout is not None else PROBE_TIMEOUT_S)
     except Exception as exc:  # noqa: BLE001
         text = _error_text(exc)
         code = "AUTH_ERROR" if ("401" in text or "invalid api key" in text.lower()) else "UNREACHABLE"

@@ -39,4 +39,13 @@ export type Event =
       txHash: string;
       amount: number;
     }
+  | {
+      type: "fetchai_escrow";
+      intentHash: string;
+      settlementHash: string;
+      agentAddress: string;
+      agentName: string;
+      status: string;
+      quarantinedAmount: number;
+    }
   | { type: "error"; vault: Vault; message: string };

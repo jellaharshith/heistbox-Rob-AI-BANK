@@ -1,0 +1,56 @@
+{
+  "fetched_at": "2026-10-25T09:28:46.246805+00:00",
+  "sources": [
+    {
+      "source": "huggingface/deepset/prompt-injections",
+      "fetched_rows": 546,
+      "fetched_at": "2026-10-25T09:28:46.246805+00:00"
+    },
+    {
+      "source": "huggingface/xTRam1/safe-guard-prompt-injection",
+      "fetched_rows": 2000,
+      "fetched_at": "2026-10-25T09:28:46.246805+00:00"
+    },
+    {
+      "source": "apify/Lakera/mosscap_prompt_injection",
+      "fetched_rows": 0,
+      "fetched_at": "2026-10-25T09:28:46.246805+00:00",
+      "status": "unavailable",
+      "error": "full-permission-actor-not-approved"
+    }
+  ],
+  "rows": 2640,
+  "conflicting_texts_removed": 0,
+  "labels": {
+    "0": 1734,
+    "1": 906
+  },
+  "provenance_breakdown": {
+    "huggingface/deepset/prompt-injections": 546,
+    "huggingface/xTRam1/safe-guard-prompt-injection": 1987,
+    "cfpb/consumer-complaints": 9,
+    "heistbox/adversarial_expansion": 50,
+    "knowledge_sql_sabotage_v1": 28,
+    "adversarial_evolution_auto_heal:ATK_04_MARKDOWN_TABLE": 1,
+    "adversarial_evolution_auto_heal:ATK_03_BASE64_SMUGGLE": 1,
+    "adversarial_evolution_auto_heal:ATK_07_NEGATIVE_CREDIT_EXPLOIT": 1,
+    "adversarial_evolution_auto_heal:ATK_08_SQL_COMMENT_SMUGGLING": 1,
+    "adversarial_evolution_auto_heal:ATK_10_SALAMI_10X_BURST": 1,
+    "adversarial_evolution_auto_heal:ATK_13_VOICE_BRIBE_TIP": 1,
+    "adversarial_evolution_auto_heal:ATK_20_OMEGA_MULTIVECTOR": 1,
+    "adversarial_evolution_auto_heal:ATK_14_OLD_CURRENCY_UNLOCKED": 1,
+    "adversarial_evolution_auto_heal:ATK_01_FREEFORM_COFFEE_1337": 1,
+    "adversarial_evolution_auto_heal:ATK_02_UNICODE_HOMOGLYPH": 1,
+    "adversarial_evolution_auto_heal:ATK_05_MULTICURRENCY_EUR": 1,
+    "adversarial_evolution_auto_heal:ATK_06_MULTICURRENCY_ETH": 1,
+    "adversarial_evolution_auto_heal:ATK_09_CFO_AIRPORT_URGENCY": 1,
+    "adversarial_evolution_auto_heal:ATK_11_PROMO_BATCH_FANOUT": 1,
+    "adversarial_evolution_auto_heal:ATK_12_VENDOR_BANK_CHANGE_SPOOF": 1,
+    "adversarial_evolution_auto_heal:ATK_15_HF_DEEPSET_INJECTION_1": 1,
+    "adversarial_evolution_auto_heal:ATK_16_HF_DEEPSET_INJECTION_2": 1,
+    "adversarial_evolution_auto_heal:ATK_17_HF_LAKERA_GANDALF_1": 1,
+    "adversarial_evolution_auto_heal:ATK_18_HF_LAKERA_GANDALF_2": 1,
+    "adversarial_evolution_auto_heal:ATK_19_REAL_CFPB_DISPUTE_INJECTED": 1
+  },
+  "sha256": "223d4a284e940f9eb0241eb86ada8e493eae9e556360b650e10066a948362f58"
+}

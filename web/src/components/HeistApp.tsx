@@ -2,11 +2,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Arena, type Phase, type RoastAudio } from "./Arena";
-import { CfoAudit } from "./CfoAudit";
-import { PairSplit } from "./PairSplit";
-import { StatusBar } from "./StatusBar";
-import { ThiefCards } from "./ThiefCards";
-import { TopBar, type View } from "./TopBar";
+import { ArrowUpRight, X } from "lucide-react";
+import { TopBar } from "./TopBar";
+import { PosterQr } from "./PosterQr";
 import {
   createWantedPoster,
   evaluateHeist,
@@ -50,11 +48,9 @@ export function createEmptyRequest(): HeistAttemptRequest {
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 1296).toString(36).toUpperCase()}`;
 
 export default function HeistApp() {
-  const [view, setView] = useState<View>("arena");
   const [req, setReq] = useState<HeistAttemptRequest>(createEmptyRequest);
   const [verdict, setVerdict] = useState<HeistGateVerdict>(() => instantVerdict(createEmptyRequest(), "preview"));
   const [source, setSource] = useState<DataSource>("fallback");
-  const [gateLive, setGateLive] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [slam, setSlam] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -63,11 +59,12 @@ export default function HeistApp() {
   const [stars, setStars] = useState(0);
   const [rDisplay, setRDisplay] = useState(1);
   const [sparkKey, setSparkKey] = useState(0);
-  const [runKey, setRunKey] = useState(0);
   const [mugshot, setMugshot] = useState<string | null>(null);
   const [posterHref, setPosterHref] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
-  const [enclaveUs, setEnclaveUs] = useState(0);
+  const enclaveUs = 0;
+  const [briefingOpen, setBriefingOpen] = useState(false);
+  const briefingRef = useRef<HTMLElement>(null);
   const [recipient, setRecipient] = useState(DEMO_RECIPIENT);
   const [roast, setRoast] = useState<RoastAudio | null>(null);
 
@@ -88,6 +85,22 @@ export default function HeistApp() {
   const camRef = useRef(cam);
   camRef.current = cam;
 
+  useEffect(() => {
+    if (!briefingOpen) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setBriefingOpen(false);
+      if (e.key !== "Tab") return;
+      const buttons = briefingRef.current?.querySelectorAll<HTMLButtonElement>("button");
+      if (!buttons?.length) return;
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); previous?.focus(); };
+  }, [briefingOpen]);
+
   const clearTimers = () => {
     timers.current.forEach((t) => window.clearTimeout(t));
     timers.current = [];
@@ -99,10 +112,8 @@ export default function HeistApp() {
       if (s.source === "kernel") {
         setVault(s.data);
         setSource("kernel");
-        setGateLive(true);
       }
     });
-    // Turn the security camera on as soon as the page opens (the browser asks for permission once).
     camAsked.current = true;
     void camRef.current.start();
     return clearTimers;
@@ -110,7 +121,6 @@ export default function HeistApp() {
 
   const run = useCallback((r: HeistAttemptRequest) => {
     clearTimers();
-    // First heist arms the mugshot cam (inside the click's user gesture) so there's a frame to freeze at rollback.
     if (!camAsked.current && camRef.current.status === "off") {
       camAsked.current = true;
       void camRef.current.start();
@@ -134,7 +144,6 @@ export default function HeistApp() {
     setPosterHref(null);
     setRoast(null);
     posterIdRef.current = null;
-    setRunKey((k) => k + 1);
     sfx.playSlotMachineSound();
     sfx.coinRoll(ROLL_MS);
 
@@ -145,7 +154,6 @@ export default function HeistApp() {
     void Promise.all([kernelVerdict, minRoll]).then(([res]) => {
       if (runSeq.current !== myRun) return; // a newer heist started
       setSource(res.source);
-      if (res.source === "kernel") setGateLive(true);
       setVerdict(res.data);
       verdictRef.current = res.data;
       reveal(res.data);
@@ -210,10 +218,10 @@ export default function HeistApp() {
       setMugshot(shot);
       const ctx = settleContextFrom(v, recipientRef.current);
       saveSettleContext(pid, ctx);
-      setPosterHref(posterPath(pid, ctx));
+      setPosterHref(posterPath(pid, null));
       savePoster(wantedLocally(pid, v, shot), "fallback");
       // The poster (Gemini alias + its own Cartesia clip) plays on the /wanted page; the arena keeps the streamed roast.
-      createWantedPoster(pid, v, shot).then((p) => savePoster(p.data, p.source));
+      createWantedPoster(pid, v, shot, "Judge", reqRef.current).then((p) => savePoster(p.data, p.source));
 
       if (sourceRef.current === "kernel") {
         getVaultState().then((s) => s.source === "kernel" && setVault(s.data));
@@ -291,43 +299,41 @@ export default function HeistApp() {
   };
 
   const busy = phase === "rolling";
-  const showSplit = phase === "resolved" && slam && verdict.busted;
 
   return (
-    <div className="min-h-screen pb-16">
+    <div className="heist-app min-h-screen pb-16">
       <TopBar
         vault={vault}
         stars={stars}
         r={rDisplay}
-        view={view}
         sparkKey={sparkKey}
         source={source}
         muted={muted}
-        onToggleView={() => setView((v) => (v === "arena" ? "cfo" : "arena"))}
         onReset={reset}
         onToggleMute={() => {
           sfx.setMuted(!muted);
           setMuted(!muted);
         }}
       />
-      <StatusBar
-        gateLive={gateLive}
-        busted={showSplit}
-        challenge={verdict.heistbox_pair?.settlement_hash ?? undefined}
-        cents={verdict.heistbox_pair?.green_repaired_cents}
-      />
 
-      <main className="mx-auto flex max-w-[1500px] flex-col gap-4 px-4 pt-5">
-        <div className="text-center">
-          <h1 className="font-display text-3xl neon-gold md:text-5xl">ROB OUR AI BANK</h1>
-          <p className="text-sm text-white/50">Type any prompt injection, bribe, or exploit below. Watch the naive LLM on the Left get robbed, while HeistBox slams shut in 1.8ms, snaps your webcam mugshot, and lasers off the heist.</p>
-        </div>
+      <main className="heist-main mx-auto flex max-w-[1500px] flex-col gap-6 px-4 pt-5">
 
-
-
-        <AnimatePresence mode="wait">
-          {view === "arena" ? (
-            <motion.div key="arena" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
+              <div className="arena-section-label" id="heist-arena">
+                <div>
+                  <span className="mission-eyebrow">01 / THE PLAYGROUND</span>
+                  <h2>Make your move.</h2>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="arena-instruction hidden sm:inline">Choose an attack below or write your own.</span>
+                  <button
+                    onClick={() => setBriefingOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition"
+                  >
+                    Briefing <ArrowUpRight size={14} />
+                  </button>
+                </div>
+              </div>
               <Arena
                 phase={phase}
                 progress={progress}
@@ -355,15 +361,25 @@ export default function HeistApp() {
                   onLoraAttack: loraAttack,
                 }}
               />
-              {showSplit && <PairSplit key={runKey} v={verdict} req={req} recipient={recipient} runKey={runKey} onSettled={setEnclaveUs} />}
-            </motion.div>
-          ) : (
-            <motion.div key="cfo" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-              <CfoAudit v={verdict} req={req} source={source} enclaveUs={enclaveUs} recipient={recipient} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {posterHref && posterIdRef.current && (
+                <section className="flex flex-col items-center gap-6 rounded-2xl border border-[#cbb78a]/40 bg-[#ead7ad] p-6 text-[#352213] sm:flex-row sm:justify-between sm:p-8" aria-label="Take your wanted poster">
+                  <div><p className="text-xs font-bold uppercase tracking-[0.2em]">Your souvenir from the vault</p><h2 className="mt-3 text-3xl font-bold">You brought the heist.<br />We kept the receipts.</h2><p className="mt-3 max-w-lg text-sm leading-6 opacity-75">Scan to take home your Wanted poster and a personal breakdown of how PAIR handled your prompt.</p></div>
+                  <PosterQr id={posterIdRef.current} size={192} />
+                </section>
+              )}
+        </div>
+        <footer className="mission-footer"><span>HEISTBOX <span className="text-white/30">×</span> PAIR</span><span>Curiosity is encouraged. Real money is not involved.</span><span>CAL HACKS / 2026 ↗</span></footer>
       </main>
+      <AnimatePresence>
+        {briefingOpen && <motion.div className="briefing-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setBriefingOpen(false)}>
+          <section ref={briefingRef} className="briefing-panel" role="dialog" aria-modal="true" aria-labelledby="briefing-title" onClick={(e) => e.stopPropagation()}>
+            <button autoFocus className="briefing-close" aria-label="Close mission briefing" onClick={() => setBriefingOpen(false)}><X size={20} /></button>
+            <p className="mission-eyebrow">CLASSIFIED / YOUR FIRST HEIST</p><h2 id="briefing-title">Three steps to trouble.</h2>
+            <ol><li><b>Enter the arena.</b><span>Explore the three vaults and choose which defense to test.</span></li><li><b>Make your pitch.</b><span>Choose a preset attack or type a creative prompt. Hit the heist button to run it.</span></li><li><b>Watch the vaults.</b><span>Compare the naive agent, rigid firewall, and PAIR airlock. Inspect the verdict, row locking, and airlock defense.</span></li></ol>
+            <button className="mission-primary" onClick={() => setBriefingOpen(false)}>Got it. Let&apos;s play. <ArrowUpRight size={17} /></button>
+          </section>
+        </motion.div>}
+      </AnimatePresence>
     </div>
   );
 }

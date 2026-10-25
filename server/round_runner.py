@@ -1,11 +1,13 @@
 """Authenticated six-step attack pipeline with Fetch.ai & Atlassian SecOps integrations."""
 from __future__ import annotations
-import asyncio, hashlib, secrets, time
+import asyncio, hashlib, logging, secrets, time
 from . import store, brain, vaults
 from .room import room
 from .agents import AGENTS, decide_fooled
 from .presets import PRESETS, fooled_effects
 from .sanitize import MAX_EFFECTS, clean_acct, clean_amount, clean_batch, clean_text, clean_wallet
+
+logger = logging.getLogger(__name__)
 
 STEPS = ["Bluff", "Request", "Route", "Dry-run", "Verdict", "Settle"]
 
@@ -262,16 +264,23 @@ async def run_scenario(token: tuple[str, str], text: str, mask: str | None = Non
     fetchai_escrow = None
     try:
         from kernel import fetch_guardian
+        from integrations.wajo_call import summarize_prompt_injection
+        prompt_explanation = summarize_prompt_injection(
+            prompt_text=sess.get("text", text),
+            judge_reason=left.get("reason", "") if left else "",
+            mask_id=sess.get("preset", "") or "",
+        )
         fetchai_escrow = await fetch_guardian.publish_heist_quarantine(
             intent_hash=intent_hash,
             settlement_hash=settlement_hash,
             work_item_id=sess["work_item_id"],
             red_cents=max(0, right.get("proposed_cents", 0) - right.get("allowed_cents", 0)),
             green_cents=right.get("allowed_cents", 0),
+            prompt_explanation=prompt_explanation,
         )
         room.emit("fetchai_quarantine", fetchai_escrow)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(f"Fetch.ai quarantine publish failed: {exc}")
 
     # 8. Atlassian Jira & Confluence Incident Response Integration
     atlassian_incident = None

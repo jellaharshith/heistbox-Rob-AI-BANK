@@ -29,6 +29,7 @@ type State = {
   subtitle: string;
   posterUrl: string;
   settlement?: Extract<Event, { type: "settlement" }>;
+  fetchaiEscrow?: Extract<Event, { type: "fetchai_escrow" }>;
   error: string;
 };
 export const idleClips = {
@@ -69,6 +70,7 @@ export function ingest(event: Event) {
     ledgers: reduceEvent(s.ledgers, event),
     ...(event.type === "poster" ? { posterUrl: event.imageUrl } : {}),
     ...(event.type === "settlement" ? { settlement: event } : {}),
+    ...(event.type === "fetchai_escrow" ? { fetchaiEscrow: event } : {}),
     ...(event.type === "error" ? { error: event.message } : {}),
   }));
 }

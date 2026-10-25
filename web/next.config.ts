@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   // The rewrite proxy defaults to a 30s timeout; Factory Droid patches (droid exec) can run ~2-3 minutes.
   experimental: { proxyTimeout: 200_000 },
   // Tunnel hostnames (cloudflared / ngrok) hit `next dev` from another origin.
-  allowedDevOrigins: ["*.trycloudflare.com", "*.ngrok-free.app", "*.ngrok.app", "*.ngrok.io"],
+  allowedDevOrigins: ["127.0.0.1", "10.0.0.211", "*.trycloudflare.com", "*.ngrok-free.app", "*.ngrok.app", "*.ngrok.io"],
   async rewrites() {
     return {
       beforeFiles: [],

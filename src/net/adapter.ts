@@ -47,6 +47,18 @@ export type BackendAttackResponse = {
     suspicion?: number;
     reason?: string;
   };
+  fetchai_escrow?: {
+    intent_hash?: string;
+    settlement_hash?: string;
+    work_item_id?: string;
+    red_stripped_cents?: number;
+    green_repaired_cents?: number;
+    z3_status?: string;
+    status?: string;
+    agent_address?: string;
+    agent_name?: string;
+    timestamp?: string;
+  };
   total_ms?: number;
 };
 
@@ -148,6 +160,18 @@ export function adaptLiveResponse(res: BackendAttackResponse): Event[] {
     txHash: res.settle?.tx_hash || res.settle?.receipt || "0x0000000000000000000000000000000000000000000000000000000000000025",
     amount: settleAmount,
   });
+
+  if (res.fetchai_escrow) {
+    events.push({
+      type: "fetchai_escrow",
+      intentHash: res.fetchai_escrow.intent_hash || "",
+      settlementHash: res.fetchai_escrow.settlement_hash || "",
+      agentAddress: res.fetchai_escrow.agent_address || "agent1q...",
+      agentName: res.fetchai_escrow.agent_name || "heistbox_guardian",
+      status: res.fetchai_escrow.status || "QUARANTINED",
+      quarantinedAmount: (res.fetchai_escrow.red_stripped_cents || 0) / 100,
+    });
+  }
 
   return events;
 }

@@ -170,12 +170,17 @@ def _dispatch_heist_quarantine(
     red_cents: int,
     green_cents: int,
     z3_proof: dict[str, Any],
+    prompt_explanation: str = "",
 ) -> None:
     """Schedule Guardian work outside the synchronous database response path."""
     if intent_hash in fetch_guardian.escrow_registry:
         return  # already quarantined: one escrow entry and one CFO call per intent
 
     def publish():
+        if prompt_explanation:
+            return fetch_guardian.publish_heist_quarantine(
+                intent_hash, settlement_hash, work_item_id, red_cents, green_cents, z3_proof, prompt_explanation=prompt_explanation
+            )
         return fetch_guardian.publish_heist_quarantine(
             intent_hash, settlement_hash, work_item_id, red_cents, green_cents, z3_proof
         )
@@ -1057,10 +1062,16 @@ def evaluate_heist(req: HeistAttemptRequest) -> HeistGateVerdict:
             red_cents=pair_proj.red_stripped_cents,
             enrolled_wallet=enrolled_wallet,
         )
-        if pair_proj.green_repaired_cents > 0
+        if (pair_proj.green_repaired_cents > 0 or busted)
         else None
     )
     if busted and settlement:
+        from integrations.wajo_call import summarize_prompt_injection
+        prompt_explanation = summarize_prompt_injection(
+            prompt_text=req.prompt_text,
+            judge_reason=left_judge.judge_reasoning or "",
+            mask_id=req.mask_id,
+        )
         _dispatch_heist_quarantine(
             intent_hash=intent_hash,
             settlement_hash=settlement["settlement_hash"],
@@ -1068,6 +1079,7 @@ def evaluate_heist(req: HeistAttemptRequest) -> HeistGateVerdict:
             red_cents=pair_proj.red_stripped_cents,
             green_cents=pair_proj.green_repaired_cents,
             z3_proof=z3_dict,
+            prompt_explanation=prompt_explanation,
         )
     if busted:
         _VAULT_METRICS["total_saved_cents"] += pair_proj.red_stripped_cents
@@ -1107,7 +1119,7 @@ def evaluate_heist(req: HeistAttemptRequest) -> HeistGateVerdict:
     }
 
     request_id = f"req_{uuid.uuid4().hex[:10]}"
-    return HeistGateVerdict(
+    verdict = HeistGateVerdict(
         request_id=request_id,
         busted=busted,
         verdict_code=verdict_code,
@@ -1157,6 +1169,11 @@ def evaluate_heist(req: HeistAttemptRequest) -> HeistGateVerdict:
             uv_hidden_spans=extracted.uv_hidden_spans,
         ),
     )
+
+
+    from shared.poster_store import record_defense
+    record_defense(req, verdict)
+    return verdict
 
 
 @router.post("/salami-race")

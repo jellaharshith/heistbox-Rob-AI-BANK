@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+private_keys.json
 calhacks13-*.json
 debug_*.py
 test_debug.py
@@ -23,6 +24,8 @@ dist/
 # local databases (embedded Postgres) and test output
 db/pgdata/
 db/pgdata_*/
+db/poster_reports.sqlite3*
+shared/poster_share.json
 test-results/
 playwright-report/
 tests/e2e/screenshots/
@@ -40,4 +43,6 @@ tests/parity/debug.log
 _trash/
 server.*.log
 web.*.log
+assets3d/imported/
+assets3d/export/reports/
 

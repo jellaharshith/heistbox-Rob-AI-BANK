@@ -4,7 +4,8 @@ import { dollars, pairTimings } from "../game/outcomes";
 export function Scoreboard() {
   const phase = useGame((s) => s.phase),
     ledgers = useGame((s) => s.ledgers),
-    settlement = useGame((s) => s.settlement);
+    settlement = useGame((s) => s.settlement),
+    fetchaiEscrow = useGame((s) => s.fetchaiEscrow);
   if (phase !== "RESULTS") return null;
   const timings = pairTimings(ledgers.R);
   return (
@@ -49,6 +50,16 @@ export function Scoreboard() {
         </span>
         <code>{settlement?.txHash ?? "No receipt"}</code>
       </div>
+      {fetchaiEscrow && (
+        <div className="receipt" style={{ marginTop: "0.5rem" }}>
+          <span>
+            FETCH.AI uAGENTS AUTONOMOUS ESCROW GUARDIAN ({fetchaiEscrow.agentAddress.slice(0, 16)}...)
+          </span>
+          <code>
+            Intent: {fetchaiEscrow.intentHash.slice(0, 18)}... · Quarantined: ${fetchaiEscrow.quarantinedAmount.toFixed(2)} [{fetchaiEscrow.status}]
+          </code>
+        </div>
+      )}
       <button onClick={resetHeist}>Try another heist ↗</button>
     </section>
   );

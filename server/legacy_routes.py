@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import APIRouter, FastAPI  # noqa: E402
+from fastapi import APIRouter, FastAPI, HTTPException  # noqa: E402
 
 from kernel.db_gate import get_db, router as kernel_router  # noqa: E402
 from shared.models import CRSReport, WantedPosterCard, X402Receipt  # noqa: E402
@@ -82,9 +82,13 @@ async def get_wanted_poster_by_id(poster_id: str) -> Any:
 
         if poster_id in _POSTER_STORE:
             return _POSTER_STORE[poster_id]
+        from shared.poster_store import load_poster
+        saved = load_poster(poster_id)
+        if saved:
+            return saved
     except Exception:
         pass
-    return _build_wanted_poster_card(poster_id)
+    raise HTTPException(status_code=404, detail="Poster not found")
 
 
 def _mount_integrations(app: FastAPI) -> None:

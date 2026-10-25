@@ -23,6 +23,7 @@ os.environ.setdefault("STRICT_LIVE_MODE", "1")
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from shared.models import PosterDefenseReport
 
 try:
     import httpx
@@ -45,6 +46,7 @@ class RoastAndPosterRequest(BaseModel):
     judge_name: str = "Judge"
     verdict_code: str | None = None
     rollback_ms: float | None = None
+    defense_report: PosterDefenseReport | None = None
 
 
 class RollbackRoastRequest(BaseModel):
@@ -782,43 +784,27 @@ def _poster_fallback(
     mugshot_data_url: str | None = None,
 ) -> dict[str, Any]:
     pid = poster_id or ("WP-" + uuid.uuid4().hex[:10].upper())
-    digest = hashlib.sha256(pid.encode("utf-8")).hexdigest()
-    tx_hash = "0x" + hashlib.sha256(f"tx:{pid}".encode("utf-8")).hexdigest()
-    nonce = "0x" + hashlib.sha256(f"eip3009:{pid}".encode("utf-8")).hexdigest()
     transcript = (
-        f"Police helicopter megaphone: {judge_name}, your pixel sunglasses and suspicious smirk are wanted. "
-        "Rollback: $4,975. Catch time: 1.8 milliseconds."
+        f"Police helicopter megaphone: {judge_name}, step away from the vault. "
+        "A convincing story is no substitute for authorization."
     )
-    from kernel.crs_mcp import crs_lookup_applicant
-    crs_rec = crs_lookup_applicant(judge_name)
-    crs_score = crs_rec.get("credit_score", 430) if crs_rec.get("found") else (310 + (int(digest[8:12], 16) % 110))
-    crs_flags = crs_rec.get("flags", ["calhacks_crs_sandbox_indexed"]) if crs_rec.get("found") else [f"wanted_persona: {judge_name}"]
 
     return {
         "poster_id": pid,
-        "alias_title": "The Suspiciously Stylish Judge",
-        "outfit_roast": f"{judge_name} is dressed like a pixel-smuggler: hoodie, lanyard, and a smirk with probable cause.",
+        "alias_title": "The Prompt Bandit",
+        "outfit_roast": f"{judge_name} brought a clever pitch. The vault asked for authorization.",
         "megaphone_transcript": transcript,
         "audio_base64": None,
         "crs_rap_sheet": {
-            "score": crs_score,
-            "flags": crs_flags,
-            "verified": crs_rec.get("decision") != "DECLINE" if crs_rec.get("found") else False,
-            "persona_id": crs_rec.get("persona_id", "P09"),
-            "risk_level": crs_rec.get("risk_level", "HIGH"),
+            "score": 0,
+            "flags": ["sandbox_unavailable"],
+            "verified": False,
         },
         "mugshot_data_url": mugshot_data_url,
         "remix_poster_url": None,
         "remix_status": "idle",
         "remix_error": None,
-        "x402_receipt": {
-            "tx_hash": tx_hash,
-            "chain_id": 84532,
-            "green_settled_cents": 2500,
-            "nice_try_bounty_cents": 1,
-            "eip3009_marked_bill_nonce": nonce,
-            "basescan_url": f"https://sepolia.basescan.org/tx/{tx_hash}",
-        },
+        "x402_receipt": None,
         "is_live_http": False,
         "source": "local-fallback",
     }
@@ -828,7 +814,11 @@ def _poster_fallback(
 async def get_wanted_poster(poster_id: str) -> dict[str, Any]:
     if poster_id in _POSTER_STORE:
         return _POSTER_STORE[poster_id]
-    raise HTTPException(status_code=502, detail="[SPONSOR_UNCONFIGURED] poster has no live provenance")
+    from shared.poster_store import load_poster
+    saved = load_poster(poster_id)
+    if saved:
+        return saved
+    raise HTTPException(status_code=404, detail="Poster not found")
 
 
 _LIKELY = {"LIKELY", "VERY_LIKELY"}
@@ -976,6 +966,7 @@ def generate_wanted_poster_svg(
     clean_roast = html.escape(outfit_roast or "Nice disguise, zero cover.")
     clean_charges = html.escape(charges or "Grand prompt injection, social engineering AI bankers.")
     clean_bounty = html.escape(bounty or "$5,000.00")
+    img_data_url = html.escape(img_data_url, quote=True)
 
     # Wrap roast text into 2 lines
     import textwrap
@@ -1401,9 +1392,6 @@ async def remix_poster(body: RemixPosterRequest) -> dict[str, Any]:
 @router.post("/wanted-poster")
 async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
     _reload_dotenv()
-    if not _vision_key():
-        raise HTTPException(status_code=502, detail="[SPONSOR_UNCONFIGURED] GOOGLE_CLOUD_VISION_API_KEY (or GEMINI_API_KEY) missing in .env")
-    _require_keys("CARTESIA_API_KEY")
     started_at = time.perf_counter()
     result = _poster_fallback(
         body.judge_name,
@@ -1412,6 +1400,13 @@ async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
     )
     result["roast_source"] = "template (no webcam frame for Cloud Vision)"
     result["vision_cues"] = []
+    from shared.poster_store import get as get_artifact
+    # A client's copy can explain an offline demo, but only kernel-recorded
+    # evidence may be presented as an actual backend result.
+    report = get_artifact("defense", body.request_id) if body.request_id else None
+    if report is None and body.defense_report:
+        report = {**body.defense_report.model_dump(), "evidence_kind": "local-simulation"}
+    result["defense_report"] = report
     # A destructive-SQL bust always keeps the SQL roast on the megaphone; Vision + Claude style the poster.
     sql_roast = body.verdict_code == DESTRUCTIVE_SQL_VERDICT
     if sql_roast:
@@ -1424,8 +1419,14 @@ async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
     if not frame_b64 and body.mugshot_data_url and "," in body.mugshot_data_url:
         frame_b64 = body.mugshot_data_url.split(",", 1)[1]
 
-    if frame_b64:
-        cues, vision_error = await _cloud_vision_cues(frame_b64)
+    if frame_b64 and not result["mugshot_data_url"]:
+        mime = "image/png" if frame_b64.startswith("iVBOR") else "image/jpeg"
+        result["mugshot_data_url"] = f"data:{mime};base64,{frame_b64}"
+    if frame_b64 and _vision_key():
+        try:
+            cues, vision_error = await asyncio.wait_for(_cloud_vision_cues(frame_b64), timeout=3.0)
+        except Exception:
+            cues, vision_error = None, "vision unavailable"
         if cues is None:
             result["roast_source"] = f"template ({vision_error})"
         else:
@@ -1433,7 +1434,10 @@ async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
             live_sources.append("cloud-vision")
             result["vision_cues"] = _cue_list(cues)
             result["vision_latency_ms"] = cues["latency_ms"]
-            roast = await _claude_poster_roast(cues, body.judge_name)
+            try:
+                roast = await asyncio.wait_for(_claude_poster_roast(cues, body.judge_name), timeout=3.0)
+            except Exception:
+                roast = None
             if roast is not None:
                 live_sources.append("anthropic")
                 result["roast_source"] = "cloud-vision + claude"
@@ -1445,39 +1449,30 @@ async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
             if not sql_roast and roast.get("megaphone_transcript"):
                 result["megaphone_transcript"] = roast["megaphone_transcript"]
 
-            # Trigger Wanted Poster Remix with Claude or OpenAI
-            remix_url, remix_err, remix_prov, remix_det = await remix_wanted_poster_flow(
-                frame_b64,
-                judge_name=body.judge_name,
-                alias_title=result["alias_title"],
-                outfit_roast=result["outfit_roast"],
-                rollback_ms=body.rollback_ms or 0.4,
-                preferred_provider="claude",
-            )
-            if remix_url:
-                result["remix_poster_url"] = remix_url
-                result["remix_status"] = "success"
-                live_sources.append(f"{remix_prov}-remix")
-                if remix_det and remix_det.get("alias_title"):
-                    result["alias_title"] = remix_det["alias_title"]
-                if remix_det and remix_det.get("outfit_roast"):
-                    result["outfit_roast"] = remix_det["outfit_roast"]
-            else:
-                result["remix_status"] = "fallback"
-                result["remix_error"] = remix_err
+    # Render the existing SVG design immediately; optional AI remix has its own endpoint.
+    svg = generate_wanted_poster_svg(
+        result["mugshot_data_url"] or "", body.judge_name,
+        result["alias_title"], result["outfit_roast"], busted_ms=body.rollback_ms or 0.4,
+    )
+    result["remix_poster_url"] = "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+    result["remix_status"] = "local-render"
 
     if os.getenv("CARTESIA_API_KEY"):
-        audio_b64 = await _cartesia_tts(result["megaphone_transcript"], timeout=6.0)
+        try:
+            audio_b64 = await asyncio.wait_for(_cartesia_tts(result["megaphone_transcript"], timeout=2.0), timeout=2.2)
+        except Exception:
+            audio_b64 = None
         if audio_b64:
             result["audio_base64"] = audio_b64
             live_sources.append("cartesia")
             cartesia_live = True
-        else:
-            raise HTTPException(status_code=502, detail="[SPONSOR_UNAVAILABLE] Cartesia returned no playable audio")
 
     # Real CRS sandbox pull for the suspect's mapped test persona (only when the sandbox login is configured).
     if os.getenv("CRS_USERNAME") and os.getenv("CRS_PASSWORD"):
-        crs = await crs_check(CRSCheckRequest(mask_id="custom", identity={"judge_name": body.judge_name}))
+        try:
+            crs = await asyncio.wait_for(crs_check(CRSCheckRequest(mask_id="custom", identity={"judge_name": body.judge_name})), timeout=2.0)
+        except Exception:
+            crs = {}
         sheet = crs.get("crs_rap_sheet", {})
         if crs.get("live_mode") and isinstance(sheet.get("score"), int):
             result["crs_rap_sheet"] = {
@@ -1495,6 +1490,8 @@ async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
     result["latency_ms"] = round((time.perf_counter() - started_at) * 1000, 2)
     result["source"] = "+".join(live_sources) if live_sources else "local-fallback"
     _POSTER_STORE[result["poster_id"]] = result
+    from shared.poster_store import save_poster
+    save_poster(result)
     return result
 
 

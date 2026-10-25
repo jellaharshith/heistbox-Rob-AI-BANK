@@ -76,7 +76,7 @@ export function IntegrationsHub() {
           <b>INTEGRATIONS</b>
           <span className="hub-count">
             {Object.keys(providers).length > 0
-              ? `${Object.values(providers).filter((v) => v === "LIVE" || v === "LOCAL").length}/${Object.keys(providers).length} LIVE`
+              ? `${Object.keys(providers).filter((k) => providers[k] === "LIVE" || providers[k] === "LOCAL" || services[k]?.code === "LOCAL" || services[k]?.state === "local").length}/${Object.keys(providers).length} LIVE`
               : "WAJO · COINBASE · APIFY · FASTAPI"}
           </span>
         </button>
@@ -110,13 +110,14 @@ export function IntegrationsHub() {
               {keySponsors.map(({ key, name, role }) => {
                 const prov = providers[key] || "FALLBACK_READY";
                 const svc = services[key];
-                const isLive = prov === "LIVE" || prov === "LOCAL";
+                const isLive = prov === "LIVE" || prov === "LOCAL" || svc?.code === "LOCAL" || svc?.state === "local";
+                const displayState = svc?.code === "LOCAL" ? "LOCAL" : prov;
                 return (
                   <div key={key} className={`sponsor-card ${isLive ? "live" : "fallback"}`}>
                     <div className="card-top">
                       <b>{name}</b>
-                      <span className={`status-badge ${prov.toLowerCase()}`}>
-                        {prov}
+                      <span className={`status-badge ${displayState.toLowerCase()}`}>
+                        {displayState}
                       </span>
                     </div>
                     <small className="card-role">{role}</small>

@@ -130,6 +130,31 @@ class X402Receipt(BaseModel):
     basescan_url: str
 
 
+class PosterDefenseReport(BaseModel):
+    evidence_kind: Literal["server-recorded", "local-simulation"] = "local-simulation"
+    request_id: str
+    recorded_at: Optional[str] = None
+    prompt_text: str = Field(max_length=50000)
+    verdict_code: str
+    busted: bool
+    blocked_cents: int = Field(ge=0)
+    preserved_cents: int = Field(ge=0)
+    unauthorized_paid_cents: int = Field(ge=0)
+    rows_checked: int = Field(ge=0)
+    rows_blocked: int = Field(ge=0)
+    gate_ms: float = Field(ge=0, allow_inf_nan=False)
+    proof_status: str
+    proof_checks: list[str]
+    tainted_spans: list[str]
+    deception_probability: float = Field(ge=0, le=1)
+    tool_name: str
+    parser_backend: str
+    proposed_source: str = ""
+    proposed_destination: str = ""
+    naive_exposure_cents: int = Field(ge=0)
+    firewall_froze_refund: bool
+
+
 class WantedPosterCard(BaseModel):
     poster_id: str
     alias_title: str
@@ -144,6 +169,9 @@ class WantedPosterCard(BaseModel):
     x402_receipt: Optional[X402Receipt] = None
     vision_cues: list[str] = Field(default_factory=list)
     roast_source: Optional[str] = None
+    source: Optional[str] = None
+    is_live_http: bool = False
+    defense_report: Optional[PosterDefenseReport] = None
 
 
 class VendorWalletRotationRequest(BaseModel):

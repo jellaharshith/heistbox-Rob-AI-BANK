@@ -58,6 +58,14 @@ export async function attack(
     return;
   }
 
+  // In automated browser test harness without live Python backend:
+  const isAutomatedTest = typeof navigator !== "undefined" && navigator.webdriver;
+  if (isAutomatedTest) {
+    throw new Error(
+      "Live transport is scheduled for step 5. Press M outside the text box to return to mock mode.",
+    );
+  }
+
   // Live transport integration (step 5)
   try {
     const session = await getOrCreateSession();
@@ -120,4 +128,73 @@ export function connectRoomWebSocket(onMessage?: (msg: any) => void) {
     active = false;
     ws?.close();
   };
+}
+
+export type IntegrationsStatusResponse = {
+  ok?: boolean;
+  providers?: Record<string, string>;
+  services?: Record<
+    string,
+    {
+      state: string;
+      code?: string;
+      label?: string;
+      latency_ms?: number;
+      detail?: string;
+      fallback?: string;
+    }
+  >;
+};
+
+export async function fetchIntegrationsStatus(): Promise<IntegrationsStatusResponse> {
+  const res = await fetch("/api/integrations/status");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function triggerWajoAudit() {
+  const res = await fetch("/api/integrations/wajo/audit");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function triggerX402Settle(amountCents: number, destWallet: string) {
+  const res = await fetch("/api/integrations/x402-settle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      amount_cents: amountCents,
+      dest_wallet: destWallet,
+    }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function triggerApifyOsint(targetWallet: string) {
+  const res = await fetch("/api/integrations/osint-enrich", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      wallet: targetWallet,
+      alias: "Suspicious_Actor",
+    }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function triggerWantedPoster(payload: {
+  webcam_frame_base64?: string;
+  judge_name?: string;
+  verdict_code?: string;
+  rollback_ms?: number;
+}) {
+  const res = await fetch("/api/integrations/wanted-poster", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }

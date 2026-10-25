@@ -12,6 +12,7 @@ import { VaultCards } from "./ui/VaultCards";
 import { Scoreboard } from "./ui/Scoreboard";
 import { Subtitles } from "./ui/Subtitles";
 import { ConsentModal } from "./ui/ConsentModal";
+import { IntegrationsHub } from "./ui/IntegrationsHub";
 import "./style.css";
 
 function CameraFeed() {
@@ -120,6 +121,7 @@ function App() {
           <div className="status">
             ● {mock ? "MOCK · OFFLINE READY" : "LIVE · CONNECTED"}
           </div>
+          <IntegrationsHub />
         </header>
         <section className="intro">
           <div>

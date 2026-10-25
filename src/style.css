@@ -761,3 +761,158 @@ footer {
   margin: 6px 0;
   display: block;
 }
+
+/* Integrations Pill Bar & Hub Modal */
+.integrations-pill-bar {
+  display: flex;
+  align-items: center;
+}
+
+.integrations-hub-btn {
+  background: #0f1c24;
+  border: 1px solid #1e3a47;
+  color: #7dd3fc;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.integrations-hub-btn:hover {
+  background: #152d3a;
+  border-color: #38bdf8;
+}
+
+.hub-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00f5d4;
+  box-shadow: 0 0 8px #00f5d4;
+}
+
+.hub-count {
+  color: #94a3b8;
+  font-size: 9px;
+  padding-left: 4px;
+  border-left: 1px solid #334155;
+}
+
+.integrations-modal {
+  background: #090e15;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  max-width: 820px;
+  width: 90%;
+  padding: 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.sponsor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.sponsor-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.sponsor-card.live {
+  border-color: #0284c755;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.card-role {
+  color: #94a3b8;
+  display: block;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.status-badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.status-badge.live,
+.status-badge.local {
+  background: #064e3b;
+  color: #34d399;
+}
+
+.status-badge.missing,
+.status-badge.offline,
+.status-badge.fallback_ready {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 6px;
+  border-top: 1px solid #1e293b;
+  padding-top: 6px;
+}
+
+.card-detail {
+  font-size: 10px;
+  color: #cbd5e1;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.btn-refresh {
+  background: #0284c7;
+  color: #fff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-refresh:hover {
+  background: #0369a1;
+}
+
+.btn-close {
+  background: #1e293b;
+  color: #cbd5e1;
+  border: 1px solid #334155;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+@media (max-width: 800px) {
+  .integrations-pill-bar {
+    display: none !important;
+  }
+}

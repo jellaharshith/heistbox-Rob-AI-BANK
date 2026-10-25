@@ -144,7 +144,7 @@ KEY_ENV_NAMES = (
     "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GOOGLE_CLOUD_VISION_API_KEY", "CARTESIA_API_KEY", "BRIGHTDATA_API_KEY",
     "APIFY_API_TOKEN", "CRS_API_KEY", "X402_SIGNER_PRIVATE_KEY", "BASE_SEPOLIA_RPC_URL",
     "FACTORY_API_KEY", "BITDEER_API_KEY", "MOSS_API_KEY", "MOSS_PROJECT_ID", "MOSS_PROJECT_KEY", "SPACETIMEDB_URI",
-    "CRS_USERNAME", "CRS_PASSWORD",
+    "CRS_USERNAME", "CRS_PASSWORD", "CFO_ALERT_PHONE_NUMBER", "WAJO_API_KEY",
 )
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 DOTENV_RELOAD_ENABLED = True
@@ -756,6 +756,38 @@ async def wajo_audit(limit: int = 50) -> dict[str, Any]:
 
     entries = wajo_call.audit_entries(max(1, min(limit, wajo_call.AUDIT_MAX)))
     return {"entries": entries, "count": len(entries), "max_kept": wajo_call.AUDIT_MAX}
+
+
+class WajoDispatchRequest(BaseModel):
+    phone_number: str | None = None
+    prompt_explanation: str | None = None
+    red_cents: int = 497500
+    green_cents: int = 2500
+    settlement_hash: str = "0xd04e9dc4a4"
+    intent_hash: str = "0x34046e589d"
+
+
+@router.post("/wajo/dispatch")
+async def dispatch_wajo_call(body: WajoDispatchRequest) -> dict[str, Any]:
+    """Manually or dynamically trigger a Wajo Fo phone call, optionally updating the target phone number."""
+    from integrations import wajo_call
+
+    if body.phone_number:
+        clean_num = body.phone_number.strip()
+        if clean_num:
+            os.environ["CFO_ALERT_PHONE_NUMBER"] = clean_num
+            _write_env({"CFO_ALERT_PHONE_NUMBER": clean_num})
+
+    with wajo_call._CALL_LOCK:
+        wajo_call._LAST_LIVE_CALL["at"] = 0.0
+
+    return await wajo_call.trigger_wajo_escalation(
+        red_cents=body.red_cents,
+        green_cents=body.green_cents,
+        settlement_hash=body.settlement_hash,
+        intent_hash=body.intent_hash,
+        prompt_explanation=body.prompt_explanation,
+    )
 
 
 def _is_local_request(request: Request) -> bool:

@@ -235,11 +235,12 @@ async def main() -> None:
     json_path = REPO_ROOT / "tests" / "integrations" / "probe_results.json"
     write_results_json(results, json_path)
 
-    md_content = generate_integrations_markdown(results)
-    md_path = REPO_ROOT / "INTEGRATIONS.md"
-    with open(md_path, "w", encoding="utf-8") as f:
-        f.write(md_content)
-    print(f"Generated {md_path}")
+    if os.environ.get("WRITE_INTEGRATIONS_MD"):
+        md_content = generate_integrations_markdown(results)
+        md_path = REPO_ROOT / "INTEGRATIONS.md"
+        with open(md_path, "w", encoding="utf-8") as f:
+            f.write(md_content)
+        print(f"Generated {md_path}")
 
 
 if __name__ == "__main__":

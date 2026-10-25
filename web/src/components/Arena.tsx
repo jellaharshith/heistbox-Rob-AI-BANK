@@ -8,6 +8,7 @@ import { usd } from "@/lib/format";
 import { classifyParser } from "@/lib/provenance";
 import type { DataSource, HeistAttemptRequest, HeistGateVerdict, RealDisputeTicket } from "@/lib/types";
 import { HeistConsole } from "./HeistConsole";
+import { AutonomousDefenseWorkflow } from "./AutonomousDefenseWorkflow";
 import { playSlotMachineSound, playVaultSlamSound, speakRoast } from "@/lib/sound";
 
 export { playSlotMachineSound, playVaultSlamSound, speakRoast };
@@ -514,6 +515,7 @@ export function Arena(props: {
           muted={props.muted}
         />
       </section>
+      <AutonomousDefenseWorkflow verdict={props.verdict} req={props.req} isBusted={isBusted} />
     </div>
   );
 }

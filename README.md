@@ -1,18 +1,11 @@
 # 🏦 BREAK THE VAULT: HEISTBOX × PAIR
 ### The Sub-Millisecond Relational Airlock for Autonomous AI Agents
 
-[![FastAPI: 0.115](https://img.shields.io/badge/FastAPI-Async%20Python-009688.svg?style=for-the-badge)](https://fastapi.tiangolo.com)
 
 > **"Don't filter the prompt. Air-lock the database."**  
 > *Ocean's 11 meets PAIR Enterprise Edition ("Rob Our AI Bank") — An adversarial living bank office staffed by autonomous AI agents where security researchers, red-teamers, and Cal Hacks judges play a heist operative attempting to socially engineer or jailbreak play-money wires in 90 seconds.*
 
 ---
-
-## 📸 Visual Showcase & Arena Overview
-
-<p align="center">
-  <img src="screenshots/crew/desktop.png" alt="HeistBox Full Arena Desktop Dashboard" width="95%" />
-</p>
 
 
 ```

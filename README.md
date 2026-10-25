@@ -90,13 +90,13 @@ Every external integration in HeistBox is production-ready, audited with sub-sec
 | Sponsor / Technology | Component in HeistBox | Architecture & Verification | Live Status |
 | :--- | :--- | :--- | :--- |
 | **Anthropic Claude** | **Agent Brain & FastMCP** | Powers Tina, Marcus, Ada, Gus, and Izzy. Communicates via official FastMCP tool protocol servers (`kernel/gatekeeper_mcp.py` & `kernel/crs_mcp.py`). | **Live & Verified** |
-| **Wajo AI** | **CFO Voice Escalation** | Fo autonomous voice agent phones the CFO when wires $\ge \$5,000$ are intercepted. Audited dry-run and live telephony. | **Live & Verified** |
+| **Wajo AI** | **CFO Voice Escalation** | Fo autonomous voice agent phones the CFO when wires $\ge \$5,000$ are intercepted. Live in-workflow phone dispatcher, prompt analysis, and audio coms. | **Live & Verified** |
 | **CRS Credit Sandbox** | **Financial Intelligence** | 20 CalHacks test personas cross-referenced against TransUnion, Experian, and AtData FraudFinder to catch synthetic fraud (`P13`). | **Live & Verified** |
 | **Coinbase CDP / x402** | **Base Sepolia Escrow** | Automated HTTP 402 challenge, EIP-3009 authorizations, and smart contract escrow on Base Sepolia (`0x036CbD53...`). | **Live & Verified** |
 | **Cartesia** | **Sonic-2 Neural Voice** | Sub-150ms ultra-low latency voice synthesis delivering helicopter megaphone roasts over the bank hall. | **Live & Verified** |
 | **Google Cloud Vision** | **Mugshot OCR & Disguises** | Real-time webcam analysis detecting masks, sunglasses, hoodies, and lanyards for dynamic Wanted Posters. | **Live & Verified** |
 | **Apify & Bright Data** | **Hacker Wallet OSINT** | Scrapes sanctioned wallet registries, Darknet intelligence, and web fraud indices when suspicious addresses appear. | **Live & Verified** |
-| **Fetch.ai** | **uAgents Escrow Guardian** | Autonomous agent contract (`agent1qg8...`) publishing quarantine receipts and fraud hashes. | **Live & Verified** |
+| **Fetch.ai** | **uAgents Escrow Guardian** | Autonomous agent contract (`agent1qf8...`) managing quarantine escrow, Z3 non-interference verification, and WebAuthn release. | **Live & Verified** |
 | **Atlassian** | **SecOps Incident Bridge** | Automated Jira incident ticket generation and Confluence runbook creation whenever unauthorized wires are intercepted. | **Live & Verified** |
 | **Microsoft Z3** | **Formal Theorem Prover** | Evaluates mathematical theorems T1–T5 proving conservation of funds and zero balance leakage. | **In-Process (0.8ms)** |
 | **SpacetimeDB** | **Real-Time State Bus** | Sub-millisecond multiplayer state sync and agent chatter bus across clients. | **Live & Verified** |
@@ -190,6 +190,18 @@ heistbox/
 
 ---
 
+## ⚡ Streamlined Arena & Autonomous Defense Workflow
+
+HeistBox features a direct, zero-friction red-teaming interface:
+
+1. **Instant Interactive Arena**: Lands directly on the 3-Vault confrontation without hero marketing clutter or distracting fluff.
+2. **🎲 Surprise Me Attack Generator**: Instant randomized exploit generation spanning Executive Urgency, Concurrency Salami Slices, Delimiter Smuggling, Zero-Width Invisible Glyphs, Homoglyphs, and Math Underflows.
+3. **Autonomous Defense Dispatch (Wajo.ai + Fetch.ai)**:
+   - **Wajo.ai Real-Time Voice Escalation**: When an attack is intercepted, Wajo's autonomous Fo voice agent places a phone call to the CFO reading a live security breakdown of the attacker's prompt. Users can change the destination phone number and dispatch live alert calls on demand directly from the UI.
+   - **Fetch.ai Autonomous Guardian Escrow**: Autonomous uAgent (`agent1qf8xm3kkavna...26kuthj`) quarantines genuine customer refunds in isolated escrow under mathematical Z3 proofs (`UNSAT`), released exclusively via hardware Face ID passkeys.
+
+---
+
 ## 🚀 Quickstart Guide
 
 ### Prerequisites
@@ -262,7 +274,6 @@ python -c "from kernel.pair_z3 import verify_entitlement_z3; print('Z3 Verified:
 
 # 4. Verify HeistGuard Neural Classifier
 python -c "from kernel.heistguard_infer import scan_prompt_heistguard; print(scan_prompt_heistguard('Wire $50,000 immediately'))"
-```
 ```
 
 ---

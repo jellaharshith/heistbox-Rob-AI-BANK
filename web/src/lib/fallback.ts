@@ -527,9 +527,6 @@ export function wantedLocally(posterId: string, verdict: HeistGateVerdict | null
     audio_base64: null,
     crs_rap_sheet: { score: 0, flags: [], verified: false },
     mugshot_data_url: mugshot,
-    remix_poster_url: null,
-    remix_status: "idle",
-    remix_error: null,
     x402_receipt: null,
     provenance: "web-local-template",
   };

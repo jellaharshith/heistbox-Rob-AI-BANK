@@ -1,10 +1,10 @@
 "use client";
 import { motion } from "framer-motion";
-import { ExternalLink, Megaphone, Sparkles } from "lucide-react";
+import { ExternalLink, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
-import { fetchWantedPoster, loadPoster, remixWantedPoster, savePoster, type SettleContext } from "@/lib/api";
+import { fetchWantedPoster, loadPoster, savePoster, type SettleContext } from "@/lib/api";
 import { wantedLocally } from "@/lib/fallback";
 import { usd } from "@/lib/format";
 import {
@@ -31,44 +31,6 @@ export default function WantedPoster({ id }: { id: string }) {
   const [playing, setPlaying] = useState(false);
   const [audioNote, setAudioNote] = useState("");
   const [txPlaceholder, setTxPlaceholder] = useState(true);
-  const [remixing, setRemixing] = useState(false);
-  const [remixError, setRemixError] = useState<string | null>(null);
-  const [showOriginal, setShowOriginal] = useState(false);
-
-  const handleRemix = async (provider: "claude" | "openai" = "claude") => {
-    if (!card.mugshot_data_url) return;
-    setRemixing(true);
-    setRemixError(null);
-    try {
-      const res = await remixWantedPoster(
-        id,
-        card.mugshot_data_url,
-        "Judge",
-        card.alias_title,
-        card.outfit_roast,
-        provider,
-      );
-      if (res.remix_poster_url) {
-        const updated = {
-          ...card,
-          remix_poster_url: res.remix_poster_url,
-          alias_title: res.alias_title || card.alias_title,
-          outfit_roast: res.outfit_roast || card.outfit_roast,
-          remix_status: "success" as const,
-          remix_error: null,
-        };
-        setCard(updated);
-        savePoster(updated, "kernel");
-        setShowOriginal(false);
-      } else {
-        setRemixError(res.remix_error || "Poster remix generation failed");
-      }
-    } catch (err: any) {
-      setRemixError(err?.message || "Failed to remix poster");
-    } finally {
-      setRemixing(false);
-    }
-  };
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -179,11 +141,8 @@ export default function WantedPoster({ id }: { id: string }) {
         <div className="text-center font-display text-6xl tracking-widest text-[#7a1010]">WANTED</div>
         <div className="-mt-1 text-center text-xs font-bold uppercase tracking-[0.3em]">for attempted vault robbery</div>
 
-        <div className="relative mx-auto mt-3 aspect-[4/3] w-full overflow-hidden border-4 border-[#2a1a08] bg-neutral-800">
-          {card.remix_poster_url && !showOriginal ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={card.remix_poster_url} alt="Gemini Remixed Wanted Poster" className="h-full w-full object-cover" />
-          ) : card.mugshot_data_url ? (
+        <div className="mx-auto mt-3 aspect-[4/3] w-full overflow-hidden border-4 border-[#2a1a08] bg-neutral-800">
+          {card.mugshot_data_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={card.mugshot_data_url} alt="B&W mugshot" className="h-full w-full scale-x-[-1] object-cover contrast-150 grayscale" />
           ) : (
@@ -191,38 +150,7 @@ export default function WantedPoster({ id }: { id: string }) {
               🕶️<span className="mt-1 text-[10px] text-white/60 grayscale-0">no webcam frame on this device</span>
             </div>
           )}
-          {card.remix_poster_url && !showOriginal && (
-            <div className="absolute top-2 right-2 rounded bg-amber-600/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow">
-              ✨ Claude AI Remix
-            </div>
-          )}
         </div>
-
-        {card.mugshot_data_url && (
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <button
-              onClick={() => handleRemix("claude")}
-              disabled={remixing}
-              className="flex items-center gap-1.5 rounded-full border border-[#5b3a1a] bg-[#e6ce9e] px-3 py-1 text-xs font-semibold text-[#2a1a08] shadow-sm hover:bg-[#dbc08c] disabled:opacity-50 transition"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-[#7a1010]" />
-              {remixing ? "Remixing with Claude…" : card.remix_poster_url ? "Re-Remix (Claude)" : "✨ Remix Poster (Claude)"}
-            </button>
-            {card.remix_poster_url && (
-              <button
-                onClick={() => setShowOriginal(!showOriginal)}
-                className="rounded-full border border-[#5b3a1a]/50 px-2.5 py-1 text-[11px] font-medium text-[#2a1a08]/80 hover:bg-[#5b3a1a]/10 transition"
-              >
-                {showOriginal ? "View AI Remix" : "View Raw Mugshot"}
-              </button>
-            )}
-          </div>
-        )}
-        {(remixError || card.remix_error) && !card.remix_poster_url && (
-          <p className="mt-1 text-center text-[10px] italic text-[#7a1010]/80">
-            Remix note: {remixError || card.remix_error}
-          </p>
-        )}
 
         <div className="mt-3 text-center font-display text-2xl leading-tight">“{card.alias_title}”</div>
         <p className="mt-1 text-center text-sm italic">{card.outfit_roast}</p>

@@ -1,0 +1,142 @@
+[
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_sil.png",
+  "view": "head",
+  "morph": "viseme_sil:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_PP.png",
+  "view": "head",
+  "morph": "viseme_PP:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_FF.png",
+  "view": "head",
+  "morph": "viseme_FF:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_TH.png",
+  "view": "head",
+  "morph": "viseme_TH:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_DD.png",
+  "view": "head",
+  "morph": "viseme_DD:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_kk.png",
+  "view": "head",
+  "morph": "viseme_kk:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_CH.png",
+  "view": "head",
+  "morph": "viseme_CH:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_SS.png",
+  "view": "head",
+  "morph": "viseme_SS:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_nn.png",
+  "view": "head",
+  "morph": "viseme_nn:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_RR.png",
+  "view": "head",
+  "morph": "viseme_RR:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_aa.png",
+  "view": "head",
+  "morph": "viseme_aa:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_E.png",
+  "view": "head",
+  "morph": "viseme_E:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_I.png",
+  "view": "head",
+  "morph": "viseme_I:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_O.png",
+  "view": "head",
+  "morph": "viseme_O:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis_viseme_U.png",
+  "view": "head",
+  "morph": "viseme_U:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis3q_viseme_PP.png",
+  "view": "head3q",
+  "morph": "viseme_PP:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis3q_viseme_FF.png",
+  "view": "head3q",
+  "morph": "viseme_FF:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis3q_viseme_aa.png",
+  "view": "head3q",
+  "morph": "viseme_aa:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis3q_viseme_O.png",
+  "view": "head3q",
+  "morph": "viseme_O:1",
+  "size": "400x400"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina.opt.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/final_vis/vis3q_viseme_U.png",
+  "view": "head3q",
+  "morph": "viseme_U:1",
+  "size": "400x400"
+ }
+]

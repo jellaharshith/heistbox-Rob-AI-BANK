@@ -1,0 +1,74 @@
+{
+ "Tina_Idle": {
+  "max_elev_L": 23.7,
+  "max_elev_R": 24.6,
+  "flex_L": 2.9,
+  "flex_R": 2.9,
+  "abd_L": 23.6,
+  "abd_R": 24.5,
+  "clav_L": 1.5,
+  "clav_R": 1.5,
+  "loop_elev_diff": 0.0,
+  "frames": 120
+ },
+ "Tina_Talk": {
+  "max_elev_L": 35.1,
+  "max_elev_R": 20.9,
+  "flex_L": 26.0,
+  "flex_R": -3.1,
+  "abd_L": 26.9,
+  "abd_R": 20.8,
+  "clav_L": 0,
+  "clav_R": 0,
+  "loop_elev_diff": 0.0,
+  "frames": 120
+ },
+ "Tina_Typing": {
+  "max_elev_L": 27.4,
+  "max_elev_R": 27.9,
+  "flex_L": 23.8,
+  "flex_R": 23.9,
+  "abd_L": 15.2,
+  "abd_R": 16.1,
+  "clav_L": 0,
+  "clav_R": 0,
+  "loop_elev_diff": 0.0,
+  "frames": 90
+ },
+ "Tina_Approve": {
+  "max_elev_L": 22.2,
+  "max_elev_R": 38.7,
+  "flex_L": -2.8,
+  "flex_R": 21.1,
+  "abd_L": 22.1,
+  "abd_R": 35.1,
+  "clav_L": 0,
+  "clav_R": 9.9,
+  "loop_elev_diff": 0.0,
+  "frames": 90
+ },
+ "Tina_Deny": {
+  "max_elev_L": 36.4,
+  "max_elev_R": 23.2,
+  "flex_L": 20.7,
+  "flex_R": -2.8,
+  "abd_L": 33.7,
+  "abd_R": 23.0,
+  "clav_L": 9.9,
+  "clav_R": 0,
+  "loop_elev_diff": 0.0,
+  "frames": 90
+ },
+ "Tina_Alarm": {
+  "max_elev_L": 45.3,
+  "max_elev_R": 17.1,
+  "flex_L": 27.9,
+  "flex_R": -4.6,
+  "abd_L": 42.1,
+  "abd_R": 16.6,
+  "clav_L": 11.3,
+  "clav_R": 0,
+  "loop_elev_diff": 0.0,
+  "frames": 60
+ }
+}

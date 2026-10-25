@@ -1,0 +1,3 @@
+# ENV REPORT
+See ..\PACK_REPORT.md for per-object tris. ENV_Bank: 5,562 tris, 7 prims/materials (Marble, Wall, Brass, Wood, Ice glass, Lamp, Steel), 1024px BaseColor/ORM/Normal tiling (UV0) + Hall_AO 1024 baked (UV1, occlusionTexture texCoord 1), 7 empties kept. Own props: CashSmall 56, CashHeist 396, Megaphone 432, WantedPoster 190, Terminal 234 tris; MAT_Props atlas 1024; Runtime mats 512 emissive.
+Optimize used --flatten false --join false --palette false --instance false --simplify false --prune false (defaults delete the empties, rename materials, and break UV1/door nodes). Door meshes in PROPS.opt sit on unnamed child nodes of the named door node (meshopt quantization). Cash props are single objects with shared data; game should clone/instance.

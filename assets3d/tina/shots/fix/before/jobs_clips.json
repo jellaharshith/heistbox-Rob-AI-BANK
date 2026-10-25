@@ -1,0 +1,146 @@
+[
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Alarm_0.3_upper.png",
+  "clip": "Tina_Alarm",
+  "t": 0.3,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Alarm_0.3_front.png",
+  "clip": "Tina_Alarm",
+  "t": 0.3,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Alarm_0.8_upper.png",
+  "clip": "Tina_Alarm",
+  "t": 0.8,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Alarm_0.8_front.png",
+  "clip": "Tina_Alarm",
+  "t": 0.8,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Alarm_1.4_upper.png",
+  "clip": "Tina_Alarm",
+  "t": 1.4,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Alarm_1.4_front.png",
+  "clip": "Tina_Alarm",
+  "t": 1.4,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Approve_0.9_upper.png",
+  "clip": "Tina_Approve",
+  "t": 0.9,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Approve_0.9_front.png",
+  "clip": "Tina_Approve",
+  "t": 0.9,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Approve_1.4_upper.png",
+  "clip": "Tina_Approve",
+  "t": 1.4,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Approve_1.4_front.png",
+  "clip": "Tina_Approve",
+  "t": 1.4,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Approve_1.9_upper.png",
+  "clip": "Tina_Approve",
+  "t": 1.9,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Approve_1.9_front.png",
+  "clip": "Tina_Approve",
+  "t": 1.9,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Deny_0.9_upper.png",
+  "clip": "Tina_Deny",
+  "t": 0.9,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Deny_0.9_front.png",
+  "clip": "Tina_Deny",
+  "t": 0.9,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Deny_1.4_upper.png",
+  "clip": "Tina_Deny",
+  "t": 1.4,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Deny_1.4_front.png",
+  "clip": "Tina_Deny",
+  "t": 1.4,
+  "view": "front",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Deny_1.9_upper.png",
+  "clip": "Tina_Deny",
+  "t": 1.9,
+  "view": "upper",
+  "size": "480x560"
+ },
+ {
+  "src": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/export/CHAR_Tina_prefix.glb",
+  "out": "C:/Users/Shaik/Downloads/heistbox/assets3d/tina/shots/fix/before/Tina_Deny_1.9_front.png",
+  "clip": "Tina_Deny",
+  "t": 1.9,
+  "view": "front",
+  "size": "480x560"
+ }
+]

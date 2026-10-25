@@ -1,0 +1,29 @@
+[
+    {
+        "out":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\shots\\fix\\after\\mz_rest.png",
+        "view":  "head",
+        "size":  "1600x1600",
+        "src":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\export\\CHAR_Tina.glb"
+    },
+    {
+        "out":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\shots\\fix\\after\\mz_viseme_aa.png",
+        "view":  "head",
+        "morph":  "viseme_aa:1",
+        "size":  "1600x1600",
+        "src":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\export\\CHAR_Tina.glb"
+    },
+    {
+        "out":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\shots\\fix\\after\\mz_viseme_sil.png",
+        "view":  "head",
+        "morph":  "viseme_sil:1",
+        "size":  "1600x1600",
+        "src":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\export\\CHAR_Tina.glb"
+    },
+    {
+        "out":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\shots\\fix\\after\\mz_viseme_PP.png",
+        "view":  "head",
+        "morph":  "viseme_PP:1",
+        "size":  "1600x1600",
+        "src":  "C:\\Users\\Shaik\\Downloads\\heistbox\\assets3d\\tina\\export\\CHAR_Tina.glb"
+    }
+]

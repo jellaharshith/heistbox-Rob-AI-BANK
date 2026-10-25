@@ -384,6 +384,99 @@ button:focus-visible {
   font-size: 10px;
   color: #617885;
 }
+
+/* Prompt Injection & HeistGuard-LoRA Detector HUD */
+.injection-detector {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.injection-detector.flagged {
+  background: rgba(80, 18, 26, 0.55);
+  border: 1px solid #dc2626;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.2);
+}
+
+.injection-detector.clean {
+  background: rgba(6, 78, 59, 0.3);
+  border: 1px solid #059669;
+}
+
+.detector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.injection-detector.flagged .detector-header {
+  color: #f87171;
+}
+
+.injection-detector.clean .detector-header {
+  color: #34d399;
+}
+
+.prob-badge {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+}
+
+.tainted-tokens {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.token-label {
+  color: #fca5a5;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.taint-chip {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 10px;
+  border: 1px solid #b91c1c;
+}
+
+.archetype-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.archetype-pill {
+  background: #0f1c26;
+  border: 1px solid #1e3a47;
+  color: #7dd3fc;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.archetype-pill:hover:not(:disabled) {
+  background: #173344;
+  border-color: #38bdf8;
+  color: #f0fdf4;
+}
+
 .subtitles {
   position: absolute;
   bottom: 15px;
@@ -573,6 +666,13 @@ footer {
   }
   .teller-actions > .quiet {
     font-size: 9px;
+  }
+  .archetype-bar {
+    gap: 5px;
+  }
+  .archetype-pill {
+    font-size: 8.5px;
+    padding: 4px 7px;
   }
   .teller-actions > span {
     display: none;

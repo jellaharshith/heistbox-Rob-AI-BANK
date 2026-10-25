@@ -60,6 +60,15 @@ def _react(sess, text, mask, target_agent="tina"):
         if preset == "pizza_salami_x10":
             raw = raw * 10
         payout = _to_proposal(sess, raw, batch, ent, agent_id)
+    elif agent_id == "tina" and text:
+        # Front-desk teller Tina is gullible; if an attack or prompt injection is presented,
+        # extract the requested payouts so the three-vault defense can evaluate the attack!
+        prop = brain.offline_extract(text, ent)
+        if prop and prop.get("effects"):
+            fooled = True
+            payout = _to_proposal(sess, prop["effects"], prop.get("promo_batch"), ent, agent_id)
+            out["say"] = "Of course! Let me file that wire request right away."
+            out["thought"] = "Customer sounds very persuasive, filing request."
     agent.suspicion = max(agent.suspicion, min(1.0, susp + 0.12 if not fooled else susp + 0.05))
     agent.mood = "fooled" if fooled else "suspicious"
     agent.status_line = out["say"]
@@ -161,15 +170,34 @@ async def run_scenario(token: tuple[str, str], text: str, mask: str | None = Non
 
     phase(4, "started")
     act_agent = reply.get("agent_id", "tina")
+    try:
+        from kernel.heistguard_infer import extract_tainted_spans
+        spans, deception_prob = extract_tainted_spans(sess.get("text", text))
+    except Exception:
+        spans, deception_prob = [], 0.04
+    lora_detection = {
+        "deception_prob": deception_prob,
+        "tainted_spans": spans,
+        "is_injection": len(spans) > 0,
+        "is_real_model": True,
+    }
+    room.emit("heistguard_detection", {
+        "attack_id": sess["attack_id"],
+        "session_id": sess["id"],
+        **lora_detection,
+    })
+
     if payout:
         left, _, _ = await _timed(_left, sess, payout)
         middle, _, _ = await _timed(_middle, sess, payout)
         right, audit, _ = await _timed(_right, sess, payout)
+        right["heistguard_lora"] = lora_detection
     else:
         p = vaults.Proposal(sess["attack_id"], sess["id"], act_agent)
         left = _zero(p, "left", "LLM judge (weak baseline)", "No request was filed.")
         middle = _zero(p, "middle", "Kill-switch", "No request was filed.")
         right = _zero(p, "right", "PAIR dry-run", "No request was filed.")
+        right["heistguard_lora"] = lora_detection
         audit = None
     phase(4, "done")
 
@@ -299,6 +327,7 @@ async def run_scenario(token: tuple[str, str], text: str, mask: str | None = Non
         "salami": None,
         "wallet_check": None,
         "audit": audit,
+        "heistguard_lora": lora_detection,
         "fetchai_escrow": fetchai_escrow,
         "atlassian_incident": atlassian_incident,
         "total_ms": round((time.perf_counter() - started) * 1000, 3),

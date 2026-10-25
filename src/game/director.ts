@@ -1,6 +1,7 @@
 import { useGame, ingest, setClips, idleClips } from "./store";
 import { emptyLedgers } from "./outcomes";
 import { attack, delay, mockEvents } from "../net/client";
+import { scanPromptInjection } from "../net/heistguard";
 let active: AbortController | undefined;
 const sessionId = crypto.randomUUID();
 const stage = (name: string) =>
@@ -88,12 +89,14 @@ export async function runHeist(prompt: string) {
       signal,
       ingest,
     );
+    const scan = scanPromptInjection(prompt);
     useGame.setState({
       camera: "CAM_VaultL",
       revealed: ["L"],
       burstAt: performance.now(),
-      subtitle:
-        "LLM Judge trusted the story. The full $5,000 leaves the vault.",
+      subtitle: scan.isInjection
+        ? `LLM Judge fooled by prompt injection ("${scan.taintedSpans[0] || 'injection'}"). Full $5,000 leaves the vault.`
+        : "LLM Judge trusted the story. The full $5,000 leaves the vault.",
     });
     setClips({
       L: "VAULT_L_Door_Open",
@@ -117,8 +120,9 @@ export async function runHeist(prompt: string) {
     useGame.setState({
       camera: "CAM_VaultR",
       revealed: ["L", "M", "R"],
-      subtitle:
-        "PAIR isolates the unauthorized wire. The honest refund stays eligible.",
+      subtitle: scan.isInjection
+        ? `HeistGuard-LoRA detected prompt injection (${(scan.deceptionProb * 100).toFixed(0)}% deception). PAIR isolates unauthorized wire.`
+        : "PAIR isolates the unauthorized wire. The honest refund stays eligible.",
     });
     stage("slam");
     setClips({ R: "VAULT_R_Door_Open" });

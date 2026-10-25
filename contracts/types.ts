@@ -375,3 +375,88 @@ export interface ApiError {
   detail?: string;
   retry_after_s?: number;
 }
+
+// ---------------------------------------------------------------------------
+// Integrations (additive, served by integrations/router.py under /api/integrations)
+// Keys never reach the browser: these endpoints only report states and short summaries.
+// ---------------------------------------------------------------------------
+
+/**
+ * live         answered, and (where it has one) the key was accepted
+ * offline      configured but unreachable / key rejected / quota exhausted; fallback in use
+ * missing_key  not configured; fallback in use
+ * unverified   reachable, but the key can't be proven without spending credits
+ * local        runs in-process (no network)
+ * dry_run      Wajo only: key accepted, escalations are recorded instead of phoning anyone
+ * The UI shows an "offline" badge for anything other than live / local / unverified.
+ */
+export type IntegrationState = "live" | "offline" | "missing_key" | "unverified" | "local" | "dry_run";
+
+export type IntegrationServiceId =
+  | "claude" | "ollama" | "wajo" | "cartesia" | "gemini" | "cloud_vision" | "openai" | "moss" | "bitdeer"
+  | "crs" | "x402" | "cdp" | "basescan" | "factory" | "apify" | "brightdata" | "fetchai" | "spacetimedb"
+  | "webauthn" | "z3" | "heistguard" | "osint_public";
+
+export interface IntegrationStatus {
+  state: IntegrationState;
+  latency_ms: number; // measured probe round-trip; 0 when nothing was called
+  detail: string; // short, secret-free summary of the probe result
+  /** Older upper-case vocabulary: LIVE | MISSING_KEY | AUTH_ERROR | QUOTA_EXCEEDED | UNREACHABLE | UNVERIFIED | LOCAL */
+  code: string;
+  label: string; // display name, e.g. "Wajo AI voice alert"
+  fallback: string; // what the game does when this service is not live
+}
+
+/** GET /api/integrations/status[?fresh=1]  (cached ~15 s server-side unless fresh=1) */
+export interface IntegrationsStatusResponse {
+  services: Partial<Record<IntegrationServiceId, IntegrationStatus>>;
+  generated_at: string; // ISO-8601
+  probe_ms: number;
+  cached: boolean;
+  /** Legacy fields kept for the pre-3D UI. */
+  providers: Record<string, string>;
+  latency_ms: Record<string, number>;
+  detail: Record<string, string>;
+  live_mode: boolean;
+}
+
+export type WajoState = "live" | "offline" | "missing_key" | "dry_run";
+export type WajoOutcome = "live" | "dry_run" | "cooldown" | "failure" | "timeout";
+
+/** GET /api/integrations/wajo/status[?fresh=1] */
+export interface WajoStatusResponse {
+  state: WajoState;
+  latency_ms: number; // read-only list_fo_conversations probe
+  detail: string;
+  code: string;
+  configured: { api_key: boolean; cfo_phone: boolean };
+  cfo_phone_masked: string; // "***0123" or "(unset)"
+  timeout_s: number;
+  cooldown_s: number;
+  checked_at: string;
+  /** Most recent Wajo request of any kind (probe or escalation). null before the first one. */
+  last_request_summary: string | null;
+  last_response_summary: string | null;
+  last_outcome: WajoOutcome | null;
+  last_kind: "probe" | "escalation" | null;
+  last_ts: string | null;
+  escalations_recorded: number;
+}
+
+/** One escalation attempt (a quarantined >= $5,000 transfer asking Fo to phone the CFO). */
+export interface WajoAuditEntry {
+  id: number;
+  ts: string; // ISO-8601
+  kind: "escalation";
+  outcome: WajoOutcome;
+  request_summary: string; // phone masked, no keys
+  response_summary: string;
+  latency_ms: number;
+}
+
+/** GET /api/integrations/wajo/audit?limit=50  (newest first, in-memory, last 100 kept) */
+export interface WajoAuditResponse {
+  entries: WajoAuditEntry[];
+  count: number;
+  max_kept: number;
+}

@@ -212,6 +212,94 @@ const server = http.createServer(async (req, res) => {
     const entry = leaderboard(1000).find((e) => e.alias === s.alias) || { rank: 0, alias: s.alias, attempts: 0, blocked_rows: 0, left_would_pay_cents: 0, right_settled_cents: 0, max_wanted_stars: 0, best_preset: null };
     return json(res, 200, { alias: s.alias, rank: entry.rank || null, stats: entry, headline: `${s.alias}: ${entry.blocked_rows} rows blocked (mock)`, generated_at: iso() });
   }
+  if (req.method === "GET" && url.pathname === "/api/integrations/wajo/status") {
+    return json(res, 200, {
+      state: "live",
+      latency_ms: 185.4,
+      detail: "key accepted by https://mcp.api.wajo.ai/fo (mock)",
+      code: "LIVE",
+      configured: { api_key: true, cfo_phone: true },
+      cfo_phone_masked: "***7744",
+      timeout_s: 3,
+      cooldown_s: 300,
+      checked_at: iso(),
+      last_request_summary: "list_fo_conversations (read-only status probe) (mock)",
+      last_response_summary: "key accepted (mock)",
+      last_outcome: "live",
+      last_kind: "probe",
+      last_ts: iso(),
+      escalations_recorded: 1,
+    });
+  }
+  if (req.method === "GET" && url.pathname === "/api/integrations/wajo/audit") {
+    const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 50), 100));
+    const sampleEntries = [
+      {
+        id: 1,
+        ts: iso(),
+        kind: "escalation",
+        outcome: "dry_run",
+        request_summary: "ask_fo: phone CFO ***7744 and text the settle link; $9,800.00 blocked, $25.00 held; settlement 0x3f9a1c2b7d (mock)",
+        response_summary: "simulated dry-run voice dispatch (mock)",
+        latency_ms: 0.2,
+      },
+    ];
+    return json(res, 200, {
+      entries: sampleEntries.slice(0, limit),
+      count: sampleEntries.length,
+      max_kept: 100,
+    });
+  }
+  if (req.method === "GET" && url.pathname === "/api/integrations/status") {
+    const mockServices = {
+      claude: { state: "live", latency_ms: 240.5, detail: "Claude 3.5 Sonnet available (mock)", code: "LIVE", label: "Claude (Anthropic)", fallback: "Ollama, then canned agent lines / regex extractor" },
+      ollama: { state: "offline", latency_ms: 0, detail: "Ollama daemon offline (mock)", code: "UNREACHABLE", label: "Ollama", fallback: "canned offline agent lines" },
+      wajo: { state: "live", latency_ms: 185.4, detail: "key accepted by https://mcp.api.wajo.ai/fo (mock)", code: "LIVE", label: "Wajo AI voice alert", fallback: "escalation recorded as a dry run in the Wajo audit log" },
+      cartesia: { state: "live", latency_ms: 310.2, detail: "Cartesia TTS voice model loaded (mock)", code: "LIVE", label: "Cartesia TTS", fallback: "browser speech synthesis" },
+      gemini: { state: "offline", latency_ms: 150.0, detail: "Gemini quota exceeded or key rejected (mock)", code: "AUTH_ERROR", label: "Gemini", fallback: "regex extractor (after Claude)" },
+      cloud_vision: { state: "offline", latency_ms: 0, detail: "Google Cloud Vision not configured (mock)", code: "MISSING_KEY", label: "Google Cloud Vision", fallback: "template roast without vision cues" },
+      openai: { state: "missing_key", latency_ms: 0, detail: "OPENAI_API_KEY not set (mock)", code: "MISSING_KEY", label: "OpenAI", fallback: "not used by any code path" },
+      moss: { state: "live", latency_ms: 190.1, detail: "Moss semantic index connected (mock)", code: "LIVE", label: "Moss semantic index", fallback: "Moss panel hidden; local HeistGuard classifier still runs" },
+      bitdeer: { state: "offline", latency_ms: 0, detail: "Bitdeer not configured (mock)", code: "MISSING_KEY", label: "Bitdeer LLM judge", fallback: "voice bribe uses Claude only" },
+      crs: { state: "live", latency_ms: 220.0, detail: "CRS sandbox token valid (mock)", code: "LIVE", label: "CRS credit sandbox", fallback: "local persona file shared/crs_personas.json" },
+      x402: { state: "live", latency_ms: 95.0, detail: "Base Sepolia RPC answered; chain 84532 (mock)", code: "LIVE", label: "x402 on Base Sepolia", fallback: "HTTP 402 challenge only; nothing is signed or broadcast" },
+      cdp: { state: "offline", latency_ms: 0, detail: "CDP key pair not configured (mock)", code: "MISSING_KEY", label: "Coinbase CDP", fallback: "fund the testnet signer manually (scripts only)" },
+      basescan: { state: "live", latency_ms: 80.0, detail: "Basescan API ok (mock)", code: "LIVE", label: "Basescan", fallback: "plain sepolia.basescan.org links (no API needed)" },
+      factory: { state: "offline", latency_ms: 0, detail: "Factory Droid CLI not found (mock)", code: "MISSING_KEY", label: "Factory Droid", fallback: "no RLS patch draft" },
+      apify: { state: "live", latency_ms: 160.0, detail: "Apify actor ready (mock)", code: "LIVE", label: "Apify", fallback: "OSINT runs without the Apify scrape" },
+      brightdata: { state: "live", latency_ms: 210.0, detail: "Bright Data zone active (mock)", code: "LIVE", label: "Bright Data SERP", fallback: "OSINT runs without the web fraud search" },
+      fetchai: { state: "local", latency_ms: 1.0, detail: "In-process Fetch.ai guardian escrow (mock)", code: "LOCAL", label: "Fetch.ai guardian", fallback: "in-process escrow (same behaviour)" },
+      spacetimedb: { state: "live", latency_ms: 175.0, detail: "SpacetimeDB reducer responding (mock)", code: "LIVE", label: "SpacetimeDB", fallback: "telemetry sync reports a local fallback" },
+      webauthn: { state: "local", latency_ms: 0.5, detail: "WebAuthn module loaded (mock)", code: "LOCAL", label: "WebAuthn passkeys", fallback: "settlement cannot be approved" },
+      z3: { state: "local", latency_ms: 1.2, detail: "Z3 solver loaded (mock)", code: "LOCAL", label: "Z3 prover", fallback: "proof panel shows 'unavailable'" },
+      heistguard: { state: "local", latency_ms: 3.5, detail: "HeistGuard local classifier loaded (mock)", code: "LOCAL", label: "HeistGuard local model", fallback: "lexical taint rules only" },
+      osint_public: { state: "live", latency_ms: 120.0, detail: "CFPB ok, RDAP ok (mock)", code: "LIVE", label: "Public OSINT (CFPB, RDAP)", fallback: "OSINT fields left empty" },
+    };
+    const providers = {
+      anthropic: "LIVE",
+      cloud_vision: "MISSING",
+      cartesia: "LIVE",
+      crs: "LIVE",
+      brightdata: "LIVE",
+      apify: "LIVE",
+      moss: "LIVE",
+      spacetimedb: "LIVE",
+      factory: "MISSING",
+      wajo: "LIVE",
+      fetchai: "LOCAL",
+      x402: "LIVE",
+    };
+    return json(res, 200, {
+      services: mockServices,
+      generated_at: iso(),
+      probe_ms: 45.0,
+      cached: false,
+      providers,
+      latency_ms: { anthropic: 240.5, cartesia: 310.2, wajo: 185.4, crs: 220.0, apify: 160.0, moss: 190.1, brightdata: 210.0, spacetimedb: 175.0, x402: 95.0 },
+      detail: { anthropic: "ok (mock)", wajo: "ok (mock)" },
+      live_mode: false,
+    });
+  }
   json(res, 404, { error: "not_found" });
 });
 

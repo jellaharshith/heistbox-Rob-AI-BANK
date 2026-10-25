@@ -46,9 +46,9 @@ MAX_BODY_BYTES = 16 * 1024      # request bodies larger than this are rejected w
 MAX_WS_CLIENTS = int(os.environ.get("HEISTBOX_MAX_WS_CLIENTS", "200"))
 WS_MAX_MESSAGE_BYTES = 4096     # inbound frames are only ever {"type":"ping"}
 PROBE_INTERVAL_S = float(os.environ.get("HEISTBOX_PROBE_INTERVAL_S", "20"))
-RATE_LIMIT_ATTACKS = int(os.environ.get("HEISTBOX_RATE_LIMIT_ATTACKS", "6"))
+RATE_LIMIT_ATTACKS = int(os.environ.get("HEISTBOX_RATE_LIMIT_ATTACKS", "50"))
 RATE_LIMIT_WINDOW_S = float(os.environ.get("HEISTBOX_RATE_LIMIT_WINDOW_S", "60"))
-SESSION_CREATE_PER_MIN = int(os.environ.get("HEISTBOX_SESSIONS_PER_MIN", "10"))
+SESSION_CREATE_PER_MIN = int(os.environ.get("HEISTBOX_SESSIONS_PER_MIN", "60"))
 
 ENTITLEMENT_CENTS = 2500
 SESSION_SOURCE_ACCT = "acct_refunds"

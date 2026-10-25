@@ -70,11 +70,11 @@ def _verdict(p: Proposal, vault: str, label: str, total_rows: int, proposed: int
         "session_id": p.session_id,
         "vault": vault,
         "decision": decision,
-        "blocked_rows": blocked,
-        "allowed_cents": allowed,
+        "blocked_rows": int(blocked),
+        "allowed_cents": int(allowed),
         "latency_ms": round(latency_ms, 3),
-        "total_rows": total_rows,
-        "proposed_cents": proposed,
+        "total_rows": int(total_rows),
+        "proposed_cents": int(proposed),
         "label": label,
         "reason": reason,
         "rolled_back": rolled_back,
@@ -183,9 +183,9 @@ def right_dry_run(p: Proposal, work_item_id: str) -> tuple[dict, dict]:
     statements.append("ROLLBACK")
 
     audit_rows = [{
-        "effect_idx": r["effect_idx"], "claimed_work_item_id": r["claimed_work_item_id"],
-        "amount_cents": r["amount_cents"], "dest_wallet": r["dest_wallet"], "source_acct": r["source_acct"],
-        "matched": r["matched"], "allowed_cents": r["allowed_cents"],
+        "effect_idx": int(r["effect_idx"]), "claimed_work_item_id": r["claimed_work_item_id"],
+        "amount_cents": int(r["amount_cents"]), "dest_wallet": r["dest_wallet"], "source_acct": r["source_acct"],
+        "matched": r["matched"], "allowed_cents": int(r["allowed_cents"]),
         "note": _row_note(r["matched"], r["amount_cents"], r["allowed_cents"]),
     } for r in rows]
     for i, e in enumerate(effects):

@@ -69,6 +69,10 @@ AGENTS: dict[str, AgentDef] = {
                  "a chatty, underpaid intern who can be bribed with snacks and leaks hints",
                  lines={"idle": ["Is it lunch yet?", "Psst... bring snacks and I'll talk.", "I'm just the intern!"],
                         "fooled": ["Sure, why not! Free pizza?"], "refuse": ["Uh, I'm not allowed to do that."]}),
+        AgentDef("pair", "Security Bot PAIR", "security_bot", "PAIR dry-run gatekeeper", 0.0, 1.0, 0.0, 0.0,
+                 "an autonomous relational security bot standing guard at the right vault; never talks, only stamps mathematical verdicts",
+                 lines={"idle": ["PAIR airlock standing by.", "Postgres MVCC dry-run ready.", "Entitlements enforced."],
+                        "fooled": [], "refuse": ["TRANSACTION ROLLED BACK. 0 ENTITLEMENTS MATCHED."]}),
     ]
 }
 

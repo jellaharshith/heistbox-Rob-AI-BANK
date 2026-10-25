@@ -83,16 +83,32 @@ function RoastPlayer({ roast, muted }: { roast: RoastAudio; muted: boolean }) {
 const REEL = ["💰", "7️⃣", "🍒", "💎", "🔔", "🪙"];
 
 function Column(props: { title: string; subtitle: string; tone: "gold" | "ice" | "red"; children: React.ReactNode; shake?: boolean }) {
-  const border = props.tone === "gold" ? "border-yellow-400/40" : props.tone === "ice" ? "border-sky-300/40" : "border-red-500/50";
+  const border =
+    props.tone === "gold"
+      ? "border-yellow-400/40 shadow-[0_0_25px_rgba(255,204,51,0.12)]"
+      : props.tone === "ice"
+        ? "border-sky-400/40 shadow-[0_0_25px_rgba(56,189,248,0.12)]"
+        : "border-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+  
+  const headerBg =
+    props.tone === "gold"
+      ? "bg-gradient-to-r from-yellow-950/40 via-black/60 to-yellow-950/20"
+      : props.tone === "ice"
+        ? "bg-gradient-to-r from-sky-950/40 via-black/60 to-sky-950/20"
+        : "bg-gradient-to-r from-emerald-950/40 via-black/60 to-emerald-950/20";
+
   return (
     <motion.div
       animate={props.shake ? { x: [0, -10, 9, -6, 4, 0], y: [0, 4, -3, 2, 0] } : {}}
       transition={{ duration: 0.45 }}
-      className={`felt card-glow relative flex min-h-[420px] flex-col overflow-hidden rounded-2xl border ${border}`}
+      className={`glass-panel relative flex min-h-[440px] flex-col overflow-hidden rounded-2xl border ${border}`}
     >
-      <div className="border-b border-white/10 bg-black/40 px-4 py-2">
-        <div className="font-display text-lg leading-tight">{props.title}</div>
-        <div className="text-[11px] uppercase tracking-wider text-white/50">{props.subtitle}</div>
+      <div className={`border-b border-white/10 ${headerBg} px-4 py-2.5 flex items-center justify-between`}>
+        <div>
+          <div className="font-display text-base sm:text-lg leading-tight tracking-wide text-white">{props.title}</div>
+          <div className="font-mono text-[10px] uppercase tracking-wider text-white/50">{props.subtitle}</div>
+        </div>
+        <span className={`h-2 w-2 rounded-full ${props.tone === "gold" ? "bg-yellow-400" : props.tone === "ice" ? "bg-sky-400" : "bg-emerald-400"} animate-pulse`} />
       </div>
       <div className="relative flex flex-1 flex-col">{props.children}</div>
     </motion.div>
@@ -416,7 +432,7 @@ function RightHeistBox(props: {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-500"></span>
                 </span>
-                <span>📞 Wajo.ai calling CFO... | 🤖 Fetch.ai holding escrow</span>
+                <span>📞 Wajo.ai alert: {usd(hp.red_stripped_cents)} blocked | 🤖 Fetch.ai holds {usd(hp.green_repaired_cents)}</span>
                 <span className="ml-1 rounded bg-yellow-400 px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-black">
                   Settle ↗
                 </span>
@@ -468,6 +484,7 @@ export function Arena(props: {
   const isBusted = props.phase === "resolved" && props.slam && props.verdict.busted;
   const settlementHash = props.verdict.heistbox_pair?.settlement_hash ?? null;
   const greenCents = props.verdict.heistbox_pair?.green_repaired_cents ?? 0;
+  const redCents = props.verdict.heistbox_pair?.red_stripped_cents ?? 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -482,7 +499,7 @@ export function Arena(props: {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
             </span>
-            <span className="animate-pulse">📞 Wajo.ai calling CFO... | 🤖 Fetch.ai holding escrow</span>
+            <span className="animate-pulse">📞 Wajo.ai alert: {usd(redCents)} blocked | 🤖 Fetch.ai holds {usd(greenCents)}</span>
           </div>
           {settlementHash && (
             <Link

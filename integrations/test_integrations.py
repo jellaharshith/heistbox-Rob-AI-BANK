@@ -200,6 +200,7 @@ def test_demo_enclave_bypass_is_off_unless_env_is_set(monkeypatch):
 
 def test_roast_requires_live_sponsors(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_REMIX_KEY", raising=False)
     monkeypatch.delenv("CARTESIA_API_KEY", raising=False)
     response = client.post("/api/integrations/roast-and-poster", json={"judge_name": "Ada"})
     assert response.status_code == 502
@@ -238,7 +239,7 @@ def test_provider_requires_live_credentials(monkeypatch):
 def test_wanted_poster_alias_and_get_by_id(monkeypatch):
     # Without vision/voice keys the poster must refuse (502) rather than invent one. Clear the keys so the
     # test never depends on (or calls) the live sponsors configured in the developer's .env.
-    for key in ("GEMINI_API_KEY", "GOOGLE_CLOUD_VISION_API_KEY", "CARTESIA_API_KEY"):
+    for key in ("GEMINI_API_KEY", "GEMINI_API_REMIX_KEY", "GOOGLE_CLOUD_VISION_API_KEY", "CARTESIA_API_KEY"):
         monkeypatch.delenv(key, raising=False)
     created = client.post("/api/integrations/wanted-poster", json={"poster_id": "WP-TEST123", "judge_name": "Grace"})
     assert created.status_code == 502
@@ -248,6 +249,30 @@ def test_spacetimedb_sync_fallback():
     body = client.post("/api/integrations/spacetimedb-sync", json={"payload": {"request_id": "req_1"}}).json()
     assert body["synced"] is True
     assert body["module"] == "heistbox_telemetry"
+
+
+def test_remix_poster_endpoint():
+    # 1. Missing mugshot returns 400
+    res = client.post("/api/integrations/remix-poster", json={"judge_name": "Alice"})
+    assert res.status_code == 400
+
+    # 2. Valid request returns structured remix payload
+    png_1x1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    res2 = client.post(
+        "/api/integrations/remix-poster",
+        json={
+            "judge_name": "Judge Alice",
+            "alias_title": "The Cookie Bandit",
+            "outfit_roast": "Hoodie and sunglasses inside the vault.",
+            "mugshot_data_url": f"data:image/png;base64,{png_1x1}",
+        },
+    )
+    assert res2.status_code == 200
+    data = res2.json()
+    assert data["remix_status"] == "success"
+    assert "remix_poster_url" in data
+    assert str(data["remix_poster_url"]).startswith("data:")
+    assert data["provider"] in ("claude-vision", "openai", "gemini")
 
 def test_health_provenance_reports_unconfigured_keys(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)

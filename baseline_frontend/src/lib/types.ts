@@ -145,6 +145,9 @@ export interface WantedPosterCard {
   audio_base64: string | null;
   crs_rap_sheet: { score: number; flags: string[]; verified: boolean };
   mugshot_data_url: string | null;
+  remix_poster_url?: string | null;
+  remix_status?: "success" | "fallback" | "failed" | "idle";
+  remix_error?: string | null;
   x402_receipt: X402Receipt | null;
   /** The integrations server's own `source` string for this poster, when it sent one. */
   provenance?: string;

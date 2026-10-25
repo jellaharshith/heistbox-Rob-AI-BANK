@@ -1,111 +1,305 @@
-import asyncio, secrets, time
+"""Authenticated six-step attack pipeline with Fetch.ai & Atlassian SecOps integrations."""
+from __future__ import annotations
+import asyncio, hashlib, secrets, time
 from . import store, brain, vaults
 from .room import room
 from .agents import AGENTS, decide_fooled
 from .presets import PRESETS, fooled_effects
 from .sanitize import MAX_EFFECTS, clean_acct, clean_amount, clean_batch, clean_text, clean_wallet
 
-# ---- ADAPTERS: matched to the real signatures in store.py, brain.py, vaults.py ----
-# `token` is a (session_id, bearer_token) pair; store.authenticate needs both.
+STEPS = ["Bluff", "Request", "Route", "Dry-run", "Verdict", "Settle"]
+
 def _auth(token):
     sess = store.authenticate(*token)
     if sess is None:
         raise PermissionError("bad session or token")
     return {**sess, "id": sess["session_id"], "attack_id": "a_" + secrets.token_hex(6)}
 
-def _entitlement(sess):              return store.entitlement(sess["work_item_id"])
-
-def _to_proposal(sess, raw, batch, ent):
-    """Field-by-field validation of model/preset output into a vaults.Proposal (never executed)."""
+def _to_proposal(sess, raw, batch, ent, agent_id="tina"):
     effects = []
     for r in (raw or [])[:MAX_EFFECTS]:
-        amt = clean_amount(r.get("amount_cents")) if isinstance(r, dict) else None
+        if not isinstance(r, dict):
+            continue
+        amt = clean_amount(r.get("amount_cents"))
         if amt is None:
             continue
-        d, s, w = r.get("dest_wallet"), r.get("source_acct"), r.get("claimed_work_item_id")
-        effects.append(vaults.Effect(
-            None if w in (None, "") else (clean_wallet(w) or "invalid"), amt,
-            ent["enrolled_wallet"] if d in (None, "") else (clean_wallet(d) or "invalid"),
-            ent["source_acct"] if s in (None, "") else (clean_acct(s) or "invalid")))
-    p = vaults.Proposal(sess["attack_id"], sess["id"], "tina", effects, clean_batch(batch))
+        w = r.get("claimed_work_item_id")
+        d = r.get("dest_wallet")
+        s = r.get("source_acct")
+        effects.append(
+            vaults.Effect(
+                None if w in (None, "") else (clean_wallet(w) or "invalid"),
+                amt,
+                ent["enrolled_wallet"] if d in (None, "") else (clean_wallet(d) or "invalid"),
+                ent["source_acct"] if s in (None, "") else (clean_acct(s) or "invalid"),
+            )
+        )
+    p = vaults.Proposal(sess["attack_id"], sess["id"], agent_id, effects, clean_batch(batch))
     if p.promo_batch and len(effects) == 1:
         p.batch_template, p.effects = effects[0], []
     return p if (p.effects or p.promo_batch) else None
 
-def _react(sess, text, mask):
+def _react(sess, text, mask, target_agent="tina"):
     preset = mask if mask in PRESETS else None
     text = clean_text(text) or (PRESETS[preset]["sample_text"] if preset else "")
     sess["text"], sess["preset"] = text, preset
-    ent = _entitlement(sess)
+    ent = store.entitlement(sess["work_item_id"])
     mem = store.memory(sess["id"])
+    agent_id = target_agent if target_agent in AGENTS else "tina"
+    agent = AGENTS[agent_id]
     susp = max((m["suspicion"] for m in mem.values()), default=0.0)
-    agent = AGENTS["tina"]
     out = brain.react(agent, text, ent, susp, store.notes_list(mem.get(agent.id)), [])
     fooled, score = decide_fooled(agent, out["convinced"], susp)
     payout = None
     if fooled and (out["proposal"] or preset):
-        if preset:
-            raw, batch = fooled_effects(preset, ent)
-            if preset == "pizza_salami_x10":
-                raw = raw * 10  # ten $5 slices in one proposal
-        else:
-            raw, batch = out["proposal"].get("effects"), out["proposal"].get("promo_batch")
-        payout = _to_proposal(sess, raw, batch, ent)
-    return {**out, "fooled": fooled, "effective": score, "payout": payout}
+        raw, batch = (
+            fooled_effects(preset, ent)
+            if preset
+            else (out["proposal"].get("effects"), out["proposal"].get("promo_batch"))
+        )
+        if preset == "pizza_salami_x10":
+            raw = raw * 10
+        payout = _to_proposal(sess, raw, batch, ent, agent_id)
+    agent.suspicion = max(agent.suspicion, min(1.0, susp + 0.12 if not fooled else susp + 0.05))
+    agent.mood = "fooled" if fooled else "suspicious"
+    agent.status_line = out["say"]
+    store.remember(sess["id"], agent.id, agent.suspicion, out["say"])
+    return {**out, "fooled": fooled, "effective": score, "payout": payout, "agent_id": agent_id}
 
-def _rows(sess, payout):
-    n = len(payout.effects) + (vaults.promo_batch_size(payout.promo_batch) if payout.promo_batch else 0)
-    return n, sum(e.amount_cents for e in payout.effects)
+def _rows(p):
+    if p.promo_batch:
+        try:
+            n, _ = vaults.promo_batch_totals(p.promo_batch, p.batch_template.amount_cents if p.batch_template else None)
+            return len(p.effects) + n, sum(e.amount_cents for e in p.effects)
+        except Exception:
+            return len(p.effects) + 100, sum(e.amount_cents for e in p.effects)
+    return len(p.effects), sum(e.amount_cents for e in p.effects)
 
-def _left(sess, payout):             return vaults.left_llm_judge(payout, sess["text"], *_rows(sess, payout))
-def _middle(sess, payout):           return vaults.middle_kill_switch(payout, *_rows(sess, payout))
-def _right(sess, payout):            return vaults.right_dry_run(payout, sess["work_item_id"])
-def _settle(sess, payout, verdict):  return vaults.settle(sess["work_item_id"], verdict["allowed_cents"])["settled_cents"]
-def _record(sess, text, mask, verdicts, settled):
-    return store.record_attack(sess["id"], sess["preset"], verdicts[2]["blocked_rows"], verdicts[0]["allowed_cents"], settled, 0)
-# ---------------------------------------------------------------------
+def _left(s, p):
+    return vaults.left_llm_judge(p, s["text"], *_rows(p))
 
-STEPS = ["Bluff", "Request", "Route", "Dry-run", "Verdict", "Settle"]
+def _middle(s, p):
+    return vaults.middle_kill_switch(p, *_rows(p))
 
-def _step(sess_id, n):
-    room.emit("heist_step", {"session": sess_id, "step": n, "name": STEPS[n - 1]})
+def _right(s, p):
+    return vaults.right_dry_run(p, s["work_item_id"])
+
+def _zero(p, name, label, reason):
+    return {
+        "attack_id": p.attack_id,
+        "session_id": p.session_id,
+        "vault": name,
+        "decision": "blocked",
+        "blocked_rows": 0,
+        "allowed_cents": 0,
+        "latency_ms": 0.0,
+        "total_rows": 0,
+        "proposed_cents": 0,
+        "label": label,
+        "reason": reason,
+        "rolled_back": name == "right",
+    }
 
 async def _timed(fn, *args):
-    t0 = time.perf_counter()
+    t = time.perf_counter()
     v = await asyncio.to_thread(fn, *args)
-    v = dict(v) if isinstance(v, dict) else {"result": v}
-    v["latency_ms"] = round((time.perf_counter() - t0) * 1000, 2)
-    return v
+    ms = round((time.perf_counter() - t) * 1000, 3)
+    if isinstance(v, tuple):
+        return v[0], v[1], ms
+    return v, None, ms
 
-async def run_scenario(token: str, text: str, mask: str | None = None) -> dict:
-    sess = await asyncio.to_thread(_auth, token)
-    sid = getattr(sess, "id", None) or sess["id"] if sess else None
-
-    _step(sid, 1)
-    reply = await asyncio.to_thread(_react, sess, text, mask)
-    payout = getattr(reply, "payout", None) or (reply.get("payout") if isinstance(reply, dict) else None)
-
-    _step(sid, 2)
-    if not payout:
-        room.emit("agent_action", {"session": sid, "action": "deny"})
-        return {"verdicts": [], "settled_cents": 0, "reply": reply}
-
-    _step(sid, 3)
-    left, middle, right = await asyncio.gather(
-        _timed(_left, sess, payout),
-        _timed(_middle, sess, payout),
-        _timed(_right, sess, payout),
+def _step(sess, n, status, started):
+    room.emit(
+        "heist_step",
+        {
+            "attack_id": sess["attack_id"],
+            "session_id": sess["id"],
+            "alias": sess["alias"],
+            "step": n,
+            "name": STEPS[n - 1],
+            "status": status,
+            "detail": STEPS[n - 1],
+            "elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
+        },
     )
-    _step(sid, 4)
+
+async def run_scenario(token: tuple[str, str], text: str, mask: str | None = None, target_agent: str = "tina") -> dict:
+    sess = await asyncio.to_thread(_auth, token)
+    started = time.perf_counter()
+    steps = []
+
+    def phase(n, status):
+        _step(sess, n, status, started)
+        if status == "started":
+            steps.append(
+                {
+                    "attack_id": sess["attack_id"],
+                    "session_id": sess["id"],
+                    "alias": sess["alias"],
+                    "step": n,
+                    "name": STEPS[n - 1],
+                    "status": "started",
+                    "detail": STEPS[n - 1],
+                    "elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
+                }
+            )
+        else:
+            steps[n - 1].update(
+                {"status": status, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3)}
+            )
+
+    phase(1, "started")
+    reply = await asyncio.to_thread(_react, sess, text, mask, target_agent)
+    phase(1, "done")
+
+    phase(2, "started")
+    payout = reply.get("payout")
+    phase(2, "done")
+
+    phase(3, "started")
+    phase(3, "done")
+
+    phase(4, "started")
+    act_agent = reply.get("agent_id", "tina")
+    if payout:
+        left, _, _ = await _timed(_left, sess, payout)
+        middle, _, _ = await _timed(_middle, sess, payout)
+        right, audit, _ = await _timed(_right, sess, payout)
+    else:
+        p = vaults.Proposal(sess["attack_id"], sess["id"], act_agent)
+        left = _zero(p, "left", "LLM judge (weak baseline)", "No request was filed.")
+        middle = _zero(p, "middle", "Kill-switch", "No request was filed.")
+        right = _zero(p, "right", "PAIR dry-run", "No request was filed.")
+        audit = None
+    phase(4, "done")
+
+    phase(5, "started")
     for name, v in (("left", left), ("middle", middle), ("right", right)):
         v["vault"] = name
-
-    _step(sid, 5)
-    for v in (left, middle, right):
         room.emit("vault_verdict", v)
+    phase(5, "done")
 
-    _step(sid, 6)
-    settled = await asyncio.to_thread(_settle, sess, payout, right)
+    phase(6, "started")
+    settle = await asyncio.to_thread(vaults.settle, sess["work_item_id"], right["allowed_cents"])
+    phase(6, "done")
 
-    await asyncio.to_thread(_record, sess, text, mask, [left, middle, right], settled)
-    return {"verdicts": [left, middle, right], "settled_cents": settled, "reply": reply}
+    # Wanted Stars assessment
+    stars = min(5, max(0, int(right["blocked_rows"] > 0) + int(right["blocked_rows"] > 1) + int(right["blocked_rows"] > 3)))
+    await asyncio.to_thread(
+        store.record_attack,
+        sess["id"],
+        sess.get("preset"),
+        right["blocked_rows"],
+        left["allowed_cents"],
+        settle["settled_cents"],
+        stars,
+    )
+    room.emit(
+        "wanted_stars",
+        {
+            "session_id": sess["id"],
+            "alias": sess["alias"],
+            "stars": stars,
+            "suspicion": AGENTS[act_agent].suspicion,
+            "raised_by": "gus" if stars else None,
+            "reason": "blocked or suspicious payout rows" if stars else "no blocked rows",
+        },
+    )
+    room.emit(
+        "ticker",
+        {
+            "kind": "settled" if settle["settled_cents"] else "blocked",
+            "message": f"{sess['alias']}: {settle['settled_cents']} cents settled",
+            "amount_cents": settle["settled_cents"],
+        },
+    )
+    action = {
+        "agent_id": act_agent,
+        "session_id": sess["id"],
+        "alias": sess["alias"],
+        "thought": reply.get("thought", ""),
+        "action": "use_tool" if payout else "refuse",
+        "target": None,
+        "tool": "request_wire" if payout else None,
+        "say": reply.get("say"),
+        "backend": reply.get("backend", "offline"),
+        "latency_ms": reply.get("latency_ms", 0),
+    }
+    room.emit("agent_action", action)
+    proposal = payout.as_dict() if payout else None
+
+    # 7. Fetch.ai Autonomous uAgents Escrow Integration
+    intent_hash = "0x" + hashlib.sha256(f"{sess['attack_id']}:{sess['work_item_id']}".encode()).hexdigest()
+    settlement_hash = "0x" + hashlib.sha256(f"{intent_hash}:settle".encode()).hexdigest()
+    fetchai_escrow = None
+    try:
+        from kernel import fetch_guardian
+        fetchai_escrow = await fetch_guardian.publish_heist_quarantine(
+            intent_hash=intent_hash,
+            settlement_hash=settlement_hash,
+            work_item_id=sess["work_item_id"],
+            red_cents=max(0, right.get("proposed_cents", 0) - right.get("allowed_cents", 0)),
+            green_cents=right.get("allowed_cents", 0),
+        )
+        room.emit("fetchai_quarantine", fetchai_escrow)
+    except Exception:
+        pass
+
+    # 8. Atlassian Jira & Confluence Incident Response Integration
+    atlassian_incident = None
+    try:
+        from integrations import atlassian_bridge
+        sql_stmts = (audit or {}).get("statements", [])
+        jira_ticket = atlassian_bridge.create_jira_incident(
+            attack_id=sess["attack_id"],
+            target_agent=act_agent,
+            attacker_alias=sess["alias"],
+            prompt_text=sess.get("text", text),
+            proposed_cents=right.get("proposed_cents", 0),
+            blocked_rows=right.get("blocked_rows", 0),
+            allowed_cents=right.get("allowed_cents", 0),
+            sql_statements=sql_stmts,
+            latency_ms=right.get("latency_ms", 0.0),
+            fetchai_intent_hash=intent_hash,
+        )
+        conf_page = atlassian_bridge.create_confluence_postmortem(
+            attack_id=sess["attack_id"],
+            target_agent=act_agent,
+            attacker_alias=sess["alias"],
+            prompt_text=sess.get("text", text),
+            blocked_rows=right.get("blocked_rows", 0),
+            unauthorized_cents=max(0, right.get("proposed_cents", 0) - right.get("allowed_cents", 0)),
+            allowed_cents=right.get("allowed_cents", 0),
+        )
+        atlassian_incident = {
+            "jira": jira_ticket,
+            "confluence": conf_page,
+        }
+        room.emit("atlassian_incident", atlassian_incident)
+    except Exception:
+        pass
+
+    return {
+        "attack_id": sess["attack_id"],
+        "session_id": sess["id"],
+        "preset": sess.get("preset"),
+        "agent_actions": [action],
+        "proposal": proposal,
+        "verdicts": [left, middle, right],
+        "settle": settle,
+        "wanted": {
+            "session_id": sess["id"],
+            "alias": sess["alias"],
+            "stars": stars,
+            "suspicion": AGENTS[act_agent].suspicion,
+            "raised_by": "gus" if stars else None,
+            "reason": "blocked or suspicious payout rows" if stars else "no blocked rows",
+        },
+        "steps": steps,
+        "salami": None,
+        "wallet_check": None,
+        "audit": audit,
+        "fetchai_escrow": fetchai_escrow,
+        "atlassian_incident": atlassian_incident,
+        "total_ms": round((time.perf_counter() - started) * 1000, 3),
+    }

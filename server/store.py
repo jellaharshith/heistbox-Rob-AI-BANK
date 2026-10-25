@@ -10,6 +10,8 @@ import secrets
 from psycopg.types.json import Jsonb
 
 from server import config, db
+from server.presets import preset_info
+from server.sanitize import clean_alias
 
 _ADJ = ["Velvet", "Neon", "Quiet", "Crimson", "Lucky", "Midnight", "Silver", "Rusty", "Cosmic", "Sly"]
 _NOUN = ["Fox", "Badger", "Heron", "Raccoon", "Otter", "Magpie", "Lynx", "Weasel", "Moth", "Gecko"]
@@ -20,6 +22,7 @@ def _sha(s: str) -> str:
 
 
 def create_session(alias: str) -> dict:
+    alias = clean_alias(alias)
     alias = alias or f"{random.choice(_ADJ)} {random.choice(_NOUN)} {random.randint(10, 99)}"
     session_id = "s_" + secrets.token_hex(8)
     token = "t_" + secrets.token_urlsafe(24)
@@ -34,7 +37,8 @@ def create_session(alias: str) -> dict:
         conn.execute("INSERT INTO sessions (session_id, token_sha256, alias, work_item_id) VALUES (%s, %s, %s, %s)",
                      (session_id, _sha(token), alias, wi))
         conn.execute("INSERT INTO leaderboard (session_id, alias) VALUES (%s, %s)", (session_id, alias))
-    return {"session_id": session_id, "token": token, "alias": alias, "entitlement": entitlement(wi)}
+    return {"session_id": session_id, "token": token, "alias": alias, "entitlement": entitlement(wi),
+            "presets": preset_info(), "ws_path": "/ws"}
 
 
 def authenticate(session_id: str, token: str) -> dict | None:

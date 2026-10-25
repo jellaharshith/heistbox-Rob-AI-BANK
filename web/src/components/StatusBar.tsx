@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { KeyRound, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { ALLOWED_KEY_NAMES, configureKeys, getIntegrationStatus } from "@/lib/api";
+import { ALLOWED_KEY_NAMES, configureKeys, getIntegrationStatus, getWajoAudit, getWajoStatus, type WajoAuditEntry, type WajoStatus } from "@/lib/api";
 import type { IntegrationState } from "@/lib/types";
 
 /** Required badges → the provider name GET /api/integrations/status actually returns (null = it doesn't report one). */
@@ -69,13 +69,17 @@ export function StatusBar({
   const [httpStatus, setHttpStatus] = useState(0);
   const [open, setOpen] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [wajo, setWajo] = useState<WajoStatus | null>(null);
+  const [wajoAudit, setWajoAudit] = useState<WajoAuditEntry[]>([]);
 
   const refresh = useCallback(async () => {
     setChecking(true);
-    const r = await getIntegrationStatus();
+    const [r, wajoStatus, audit] = await Promise.all([getIntegrationStatus(), getWajoStatus(busted === true), getWajoAudit()]);
     setItems(r.items);
     setOrigin(r.origin);
     setHttpStatus(r.httpStatus);
+    setWajo(wajoStatus);
+    setWajoAudit(audit);
     setChecking(false);
   }, []);
 
@@ -83,7 +87,7 @@ export function StatusBar({
     refresh();
     const t = window.setInterval(refresh, 30000);
     return () => window.clearInterval(t);
-  }, [refresh]);
+  }, [refresh, busted]);
 
   const lookup = (p: (typeof PILLS)[number]): IntegrationState => {
     if (!p.provider) return { provider: p.label, state: "UNKNOWN", latency_ms: 0, detail: p.why ?? "not reported" };
@@ -92,6 +96,7 @@ export function StatusBar({
   const known = new Set(PILLS.map((p) => p.provider).filter(Boolean));
   const extras = items.filter((i) => !known.has(i.provider));
   const missing = items.some((i) => i.state === "MISSING_KEY");
+  const wajoTone = wajo?.state === "live" ? "text-emerald-200" : wajo?.state === "dry_run" ? "text-amber-200" : "text-red-200";
 
   // `challenge` is the kernel's settlement hash; the settle page reads amount and recipient from the server.
   const settleHref = challenge ? `/settle?settlement=${encodeURIComponent(challenge)}` : null;
@@ -110,6 +115,14 @@ export function StatusBar({
           label="Kernel gate (SQLite)"
           st={{ provider: "kernel", state: gateLive ? "VERIFIED_LIVE" : "UNKNOWN", latency_ms: 0, detail: gateLive ? "GET /api/kernel/vault-state answered" : "kernel has not answered yet" }}
         />
+        {wajo && (
+          <span
+            className={`rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-2 py-0.5 ${wajoTone}`}
+            title={`${wajo.detail}${wajo.last_response_summary ? ` — ${wajo.last_response_summary}` : ""}`}
+          >
+            Wajo workflow: <b>{wajo.state}</b>{wajo.last_outcome ? ` · ${wajo.last_outcome}` : ""} · {wajoAudit.length} alert{wajoAudit.length === 1 ? "" : "s"}
+          </span>
+        )}
         <button onClick={refresh} disabled={checking} className="flex items-center gap-1 text-white/40 hover:text-white disabled:opacity-40" title="Re-check /api/integrations/status">
           <RefreshCw className={`h-3 w-3 ${checking ? "animate-spin" : ""}`} />
         </button>

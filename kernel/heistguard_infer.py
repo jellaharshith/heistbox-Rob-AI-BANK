@@ -7,6 +7,7 @@ import pickle
 import re
 import time
 import urllib.request
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,9 @@ from kernel.live_agent_parser import normalize_and_decode_obfuscations
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TRAIN_JSONL_PATH = PROJECT_ROOT / "training" / "data" / "heistguard_train.jsonl"
-MODEL_WEIGHTS_PATH = PROJECT_ROOT / "training" / "models" / "heistguard_lora_weights.pkl"
+# Runtime inference may train a fallback model on first use. Keep that generated
+# artifact outside the repository; explicit training scripts still own repo artifacts.
+MODEL_WEIGHTS_PATH = Path(os.environ.get("HEISTBOX_MODEL_CACHE", Path(tempfile.gettempdir()) / "heistbox" / "heistguard_lora_weights.pkl"))
 MODELFILE_PATH = PROJECT_ROOT / "training" / "Modelfile"
 QLORA_EVIDENCE_PATH = PROJECT_ROOT / "shared" / "qlora_evidence.json"
 

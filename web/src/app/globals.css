@@ -6,7 +6,7 @@
   --cyan: #22f3ff;
   --red: #ff2945;
   --green: #22ff88;
-  --ink: #07040d;
+  --ink: #070a14;
 }
 
 html,
@@ -16,11 +16,11 @@ body {
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background:
-    radial-gradient(1200px 600px at 15% -10%, #3a0b4a 0%, transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, #0b2a4a 0%, transparent 55%),
-    radial-gradient(800px 600px at 50% 120%, #0a3a24 0%, transparent 60%),
+    radial-gradient(1200px 600px at 15% -10%, #2e0840 0%, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #082440 0%, transparent 55%),
+    radial-gradient(800px 600px at 50% 120%, #072a1d 0%, transparent 60%),
     var(--ink);
   min-height: 100vh;
 }
@@ -30,14 +30,55 @@ body {
   letter-spacing: 0.02em;
 }
 .font-mono-tight {
-  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
 }
 
+/* Retro Neon Glows */
 .neon-gold { color: var(--gold); text-shadow: 0 0 4px #ffcc33cc, 0 0 16px #ff9900aa, 0 0 32px #ff660055; }
 .neon-pink { color: #ff7ae6; text-shadow: 0 0 4px #ff2bd6cc, 0 0 16px #ff2bd688; }
 .neon-cyan { color: #8ff9ff; text-shadow: 0 0 4px #22f3ffcc, 0 0 16px #22f3ff88; }
 .neon-red { color: #ff6b7d; text-shadow: 0 0 4px #ff2945, 0 0 18px #ff2945aa; }
 .neon-green { color: #8dffbf; text-shadow: 0 0 4px #22ff88, 0 0 16px #22ff8899; }
+
+/* Pixel & Glassmorphic Utilities (inspired by agent-office) */
+.glass-panel {
+  background: rgba(10, 13, 28, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-glow {
+  background: linear-gradient(180deg, rgba(16, 20, 42, 0.92) 0%, rgba(9, 12, 26, 0.96) 100%);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(108, 92, 231, 0.35);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(108, 92, 231, 0.15);
+}
+
+.pixel-card {
+  position: relative;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(18, 24, 48, 0.75) 0%, rgba(10, 14, 28, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pixel-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(34, 243, 255, 0.45);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(34, 243, 255, 0.15);
+}
+
+.pixel-badge {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid currentColor;
+}
 
 /* Marquee bulbs around the jackpot sign */
 .bulbs {

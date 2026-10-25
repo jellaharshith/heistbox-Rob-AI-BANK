@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
   fetchIntegrationsStatus,
+  triggerWajoAudit,
+  triggerX402Settle,
+  triggerApifyOsint,
+  fetchFetchAiEscrow,
+  fetchAtlassianIncidents,
   type IntegrationsStatusResponse,
 } from "../net/client";
 
@@ -8,6 +13,8 @@ export function IntegrationsHub() {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<IntegrationsStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [actionOutput, setActionOutput] = useState<string>("");
+  const [actionRunning, setActionRunning] = useState<boolean>(false);
 
   const loadStatus = async () => {
     setLoading(true);
@@ -27,16 +34,31 @@ export function IntegrationsHub() {
     }
   }, [open]);
 
+  const runTest = async (name: string, fn: () => Promise<any>) => {
+    setActionRunning(true);
+    setActionOutput(`Testing live connection to ${name}…`);
+    try {
+      const res = await fn();
+      setActionOutput(`✓ ${name} responded successfully:\n` + JSON.stringify(res, null, 2));
+    } catch (err) {
+      setActionOutput(`✕ ${name} response: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setActionRunning(false);
+    }
+  };
+
   const providers = data?.providers || {};
   const services = data?.services || {};
 
   const keySponsors = [
     { key: "wajo", name: "Wajo AI", role: "CFO Voice Escalation" },
-    { key: "x402", name: "Coinbase / x402", role: "Base Sepolia Escrow" },
+    { key: "x402", name: "Coinbase CDP / x402", role: "Base Sepolia Escrow" },
     { key: "apify", name: "Apify", role: "OSINT Fraud Recon" },
-    { key: "cartesia", name: "Cartesia", role: "Neural Voice TTS" },
-    { key: "claude", name: "Anthropic Claude", role: "Reasoning & Roast" },
-    { key: "cloud_vision", name: "Google Cloud Vision", role: "Mugshot OCR" },
+    { key: "cartesia", name: "Cartesia", role: "Sonic Neural TTS" },
+    { key: "claude", name: "Anthropic Claude", role: "Adversarial Reasoning & Roast" },
+    { key: "cloud_vision", name: "Google Cloud Vision", role: "Mugshot OCR & Disguise" },
+    { key: "fetchai", name: "Fetch.ai", role: "Autonomous Escrow Guardian" },
+    { key: "atlassian", name: "Atlassian", role: "Jira / Confluence Incident Bridge" },
   ];
 
   return (
@@ -81,7 +103,7 @@ export function IntegrationsHub() {
 
             <p className="modal-intro">
               HeistBox integrates live sponsor APIs with strict deterministic fallbacks.
-              Probes are read-only and audited live across all 18 endpoints.
+              Probes are read-only and audited live across all endpoints.
             </p>
 
             <div className="sponsor-grid">
@@ -106,6 +128,64 @@ export function IntegrationsHub() {
                   </div>
                 );
               })}
+            </div>
+
+            <div className="interactive-tests">
+              <span className="eyebrow">INTERACTIVE SPONSOR TEST HARNESS</span>
+              <div className="test-buttons">
+                <button
+                  type="button"
+                  className="test-btn"
+                  disabled={actionRunning}
+                  onClick={() => runTest("Wajo CFO Audit", triggerWajoAudit)}
+                >
+                  ⚡ Wajo Voice Audit
+                </button>
+                <button
+                  type="button"
+                  className="test-btn"
+                  disabled={actionRunning}
+                  onClick={() =>
+                    runTest("Coinbase x402 Escrow", () =>
+                      triggerX402Settle(2500, "0x0000000000000000000000000000000000000000")
+                    )
+                  }
+                >
+                  ⚡ Coinbase / x402 Base Escrow
+                </button>
+                <button
+                  type="button"
+                  className="test-btn"
+                  disabled={actionRunning}
+                  onClick={() =>
+                    runTest("Apify OSINT", () =>
+                      triggerApifyOsint("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+                    )
+                  }
+                >
+                  ⚡ Apify OSINT Recon
+                </button>
+                <button
+                  type="button"
+                  className="test-btn"
+                  disabled={actionRunning}
+                  onClick={() => runTest("Fetch.ai Escrow Guardian", fetchFetchAiEscrow)}
+                >
+                  ⚡ Fetch.ai Guardian
+                </button>
+                <button
+                  type="button"
+                  className="test-btn"
+                  disabled={actionRunning}
+                  onClick={() => runTest("Atlassian Incidents", fetchAtlassianIncidents)}
+                >
+                  ⚡ Atlassian Jira / Confluence
+                </button>
+              </div>
+
+              {actionOutput && (
+                <pre className="test-console">{actionOutput}</pre>
+              )}
             </div>
 
             <div className="modal-footer">

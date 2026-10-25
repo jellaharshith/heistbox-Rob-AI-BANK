@@ -404,6 +404,57 @@ export async function getIntegrationStatus(): Promise<{ items: IntegrationState[
   return { origin: "unreachable", items: [], httpStatus: st.status };
 }
 
+export type WajoState = "live" | "offline" | "missing_key" | "dry_run";
+export type WajoOutcome = "live" | "dry_run" | "cooldown" | "failure" | "timeout";
+
+export interface WajoStatus {
+  state: WajoState;
+  latency_ms: number;
+  detail: string;
+  code: string;
+  configured: { api_key: boolean; cfo_phone: boolean };
+  cfo_phone_masked: string;
+  timeout_s: number;
+  cooldown_s: number;
+  checked_at: string;
+  last_request_summary: string | null;
+  last_response_summary: string | null;
+  last_outcome: WajoOutcome | null;
+  last_kind: "probe" | "escalation" | null;
+  last_ts: string | null;
+  escalations_recorded: number;
+}
+
+export interface WajoAuditEntry {
+  id: number;
+  ts: string;
+  kind: "escalation";
+  outcome: WajoOutcome;
+  request_summary: string;
+  response_summary: string;
+  latency_ms: number;
+}
+
+export async function getWajoStatus(fresh = false): Promise<WajoStatus | null> {
+  const r = await fetchStatus(`/api/integrations/wajo/status${fresh ? "?fresh=1" : ""}`, undefined, 8_000);
+  if (r.status !== 200 || !isPlainObject(r.json)) return null;
+  return r.json as unknown as WajoStatus;
+}
+
+export async function getWajoAudit(limit = 10): Promise<WajoAuditEntry[]> {
+  const r = await fetchStatus(`/api/integrations/wajo/audit?limit=${limit}`, undefined, 8_000);
+  if (r.status !== 200 || !isPlainObject(r.json) || !Array.isArray(r.json.entries)) return [];
+  return r.json.entries.filter(isPlainObject).map((entry) => ({
+    id: n(entry.id),
+    ts: s(entry.ts),
+    kind: "escalation" as const,
+    outcome: s(entry.outcome, "failure") as WajoOutcome,
+    request_summary: s(entry.request_summary),
+    response_summary: s(entry.response_summary),
+    latency_ms: n(entry.latency_ms),
+  }));
+}
+
 /** Env names integrations/router.py KEY_ENV_NAMES accepts (anything else is rejected with 422). */
 export const ALLOWED_KEY_NAMES = [
   "ANTHROPIC_API_KEY",
@@ -813,7 +864,7 @@ export async function createWantedPoster(
 ): Promise<Sourced<WantedPosterCard>> {
   const local = wantedLocally(posterId, verdict, mugshot);
   const frame = mugshot ? mugshot.slice(mugshot.indexOf(",") + 1) : null;
-  // Gemini (up to 2×3.5s) + Cartesia TTS run back to back server-side, so allow 12s; fetchStatus never trips the breaker.
+  // Gemini Remix (multimodal image generation) + Cartesia TTS run server-side; fetchStatus never trips the breaker.
   const res = await fetchStatus(
     "/api/integrations/roast-and-poster",
     {
@@ -828,13 +879,16 @@ export async function createWantedPoster(
         rollback_ms: verdict?.clocks.postgres_pair_ms ?? null,
       }),
     },
-    12_000,
+    25_000,
   );
   const r = res.status === 200 ? res.json : null;
   if (!isPlainObject(r)) return { data: local, source: "fallback" };
   const merged = mergeTyped(local, r);
   merged.poster_id = posterId;
   merged.mugshot_data_url = mugshot ?? merged.mugshot_data_url;
+  if (typeof r.remix_poster_url === "string") merged.remix_poster_url = r.remix_poster_url;
+  if (typeof r.remix_status === "string") merged.remix_status = r.remix_status as any;
+  if (typeof r.remix_error === "string") merged.remix_error = r.remix_error;
   merged.provenance = (s(r.source) || "integrations (source not reported)") + (s(r.roast_source) ? ` · alias/roast: ${s(r.roast_source)}` : "");
   if (Array.isArray(r.vision_cues)) merged.vision_cues = r.vision_cues.filter((x): x is string => typeof x === "string");
   const crs = r.crs_rap_sheet;
@@ -855,9 +909,55 @@ export async function fetchWantedPoster(posterId: string): Promise<Sourced<Wante
   const local = wantedLocally(posterId, null, null);
   const merged = mergeTyped(local, r);
   merged.poster_id = posterId;
+  if (typeof r.remix_poster_url === "string") merged.remix_poster_url = r.remix_poster_url;
+  if (typeof r.remix_status === "string") merged.remix_status = r.remix_status as any;
+  if (typeof r.remix_error === "string") merged.remix_error = r.remix_error;
   merged.provenance = (s(r.source) || "integrations GET /wanted (source not reported)") + (s(r.roast_source) ? ` · alias/roast: ${s(r.roast_source)}` : "");
   if (Array.isArray(r.vision_cues)) merged.vision_cues = r.vision_cues.filter((x): x is string => typeof x === "string");
   return { data: merged, source: "kernel" };
+}
+
+/** POST /api/integrations/remix-poster: Explicitly remix a captured photo into a stylized Wanted Poster using Gemini. */
+export async function remixWantedPoster(
+  posterId: string,
+  mugshot: string,
+  judgeName = "Judge",
+  aliasTitle?: string,
+  outfitRoast?: string,
+  provider = "claude",
+): Promise<{
+  remix_poster_url: string | null;
+  remix_status: string;
+  remix_error?: string;
+  provider?: string;
+  alias_title?: string;
+  outfit_roast?: string;
+}> {
+  const frame = mugshot.includes(",") ? mugshot.split(",")[1] : mugshot;
+  const res = await fetchStatus(
+    "/api/integrations/remix-poster",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        poster_id: posterId,
+        mugshot_data_url: mugshot,
+        webcam_frame_base64: frame,
+        judge_name: judgeName,
+        alias_title: aliasTitle,
+        outfit_roast: outfitRoast,
+        provider,
+      }),
+    },
+    25_000,
+  );
+  if (res.status === 200 && isPlainObject(res.json)) {
+    return res.json as any;
+  }
+  return {
+    remix_poster_url: null,
+    remix_status: "failed",
+    remix_error: (res.json as any)?.detail || "Remix request failed",
+  };
 }
 
 export async function createWantedPosterAlias(

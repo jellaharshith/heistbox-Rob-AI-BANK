@@ -1,5 +1,5 @@
-import HeistApp from "@/components/HeistApp";
+import { BreakTheVaultApp } from "@/components/BreakTheVaultApp";
 
 export default function Page() {
-  return <HeistApp />;
+  return <BreakTheVaultApp />;
 }

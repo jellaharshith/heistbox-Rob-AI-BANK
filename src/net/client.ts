@@ -198,3 +198,15 @@ export async function triggerWantedPoster(payload: {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
+export async function fetchFetchAiEscrow() {
+  const res = await fetch("/api/fetchai/escrow");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchAtlassianIncidents() {
+  const res = await fetch("/api/atlassian/incidents");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}

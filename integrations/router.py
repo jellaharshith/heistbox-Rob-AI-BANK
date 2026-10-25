@@ -5,6 +5,8 @@ import asyncio
 import base64
 import io
 import hashlib
+import html
+import textwrap
 import json
 import os
 import time
@@ -28,7 +30,9 @@ except ImportError:  # pragma: no cover - optional in the demo shell
     httpx = None
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
-TIMEOUT_SECONDS = 12.0
+TIMEOUT_SECONDS = 8.0  # default for one sponsor request; status probes use PROBE_TIMEOUT_SECONDS
+PROBE_TIMEOUT_SECONDS = 3.0
+STATUS_CACHE_SECONDS = 15.0
 USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 BASE_RPC_URL = "https://sepolia.base.org"
 
@@ -245,9 +249,19 @@ async def _request_json(
                 if "json" in content_type:
                     return response.json()
                 return {"audio_base64": base64.b64encode(response.content).decode("ascii")}
+        except httpx.HTTPStatusError:
+            return None  # the server answered with an error; retrying over urllib would only double the wait
         except Exception:
             pass
+    # urllib is blocking: run it in a worker thread so a slow sponsor never stalls the event loop (and the game).
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(_urllib_request_json, method, url, json_body, headers, t), timeout=2 * t + 1)
+    except Exception:
+        return None
 
+
+def _urllib_request_json(method: str, url: str, json_body: Any, headers: dict[str, str] | None, t: float) -> Any | None:
+    """Blocking urllib fallback for _request_json (IPv4 retry included). Runs in a worker thread."""
     try:
         import socket
         import urllib.request
@@ -289,9 +303,10 @@ async def _timed_request(
     *,
     json_body: Any = None,
     headers: dict[str, str] | None = None,
+    timeout: float | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
-    payload = await _request_json(method, url, json_body=json_body, headers=headers)
+    payload = await _request_json(method, url, json_body=json_body, headers=headers, timeout=timeout)
     is_live = payload is not None
     return {
         "status": "live" if is_live else "error",
@@ -354,6 +369,50 @@ def _classify_probe(name: str, code: int, body: Any, key_checked: bool) -> tuple
     return "LIVE", f"HTTP {code}"
 
 
+def _redact_secrets(text: Any) -> str:
+    from integrations.status import redact
+
+    return redact(text, limit=300)
+
+
+def _safe_probe_summary(name: str, code: int, body: Any) -> str:
+    """A short description of a probe response. Raw bodies can carry account data (Apify's users/me includes the
+    proxy password), so only counts, names that are already public, and error messages are kept."""
+    if code == 0:
+        return _redact_secrets(body)
+    if code >= 400:
+        message = ""
+        if isinstance(body, dict):
+            err = body.get("error")
+            message = str(err.get("message", "") if isinstance(err, dict) else err or body.get("message") or body.get("detail") or "")
+        elif isinstance(body, str):
+            message = body
+        return _redact_secrets(f"HTTP {code} {message[:160]}".strip())
+    if name == "anthropic" and isinstance(body, dict):
+        ids = [m.get("id", "") for m in body.get("data", []) if isinstance(m, dict)]
+        wanted = {os.getenv("ANTHROPIC_MODEL", "claude-haiku-5-5"), os.getenv("HEISTBOX_CLAUDE_MODEL", "claude-opus-5-5")}
+        listed = ", ".join(f"{m} {'listed' if m in ids else 'NOT listed'}" for m in sorted(wanted))
+        return f"key accepted; {len(ids)} models; {listed}" + ("; more pages" if body.get("has_more") else "")
+    if name == "cartesia":
+        voices = body.get("data", body) if isinstance(body, dict) else body
+        return f"key accepted; {len(voices) if isinstance(voices, list) else '?'} voices"
+    if name == "brightdata" and isinstance(body, list):
+        types = sorted({str(z.get("type")) for z in body if isinstance(z, dict)})
+        return f"key accepted; {len(body)} active zone(s), types: {', '.join(types) or 'none'}"
+    if name == "moss" and isinstance(body, (dict, list)):
+        items = body if isinstance(body, list) else body.get("indexes") or body.get("data") or []
+        return f"project key accepted; {len(items) if isinstance(items, list) else '?'} index(es)"
+    if name == "apify":
+        return "token accepted (users/me)"
+    if name == "cloud_vision":
+        return "images:annotate on a 1x1 PNG succeeded"
+    if name == "spacetimedb":
+        return "database metadata reachable (public)"
+    if name == "crs":
+        return "sandbox login accepted; GET /users ok"
+    return f"HTTP {code}"
+
+
 async def _rpc(method: str, params: list[Any]) -> Any | None:
     _reload_dotenv()
     response = await _request_json(
@@ -364,33 +423,12 @@ async def _rpc(method: str, params: list[Any]) -> Any | None:
     return None if not response or response.get("error") else response.get("result")
 
 
-@router.get("/health-provenance")
-async def health_provenance() -> dict[str, Any]:
-    """Probe configured integrations and expose provenance, status, and latency."""
-    _reload_dotenv()
-    checks: dict[str, Any] = {}
-    # Public RPC, no secret: _timed_request's "reachable" result is the full check here.
-    checks["base_sepolia_rpc"] = await _timed_request(
-        "POST",
-        os.getenv("BASE_SEPOLIA_RPC_URL", BASE_RPC_URL),
-        json_body={"jsonrpc": "2.0", "id": 1, "method": "eth_chainId", "params": []},
-    )
-    checks["base_sepolia_rpc"]["chain_id"] = (
-        int(checks["base_sepolia_rpc"]["detail"]["result"], 16)
-        if checks["base_sepolia_rpc"]["live_mode"]
-        and isinstance(checks["base_sepolia_rpc"]["detail"], dict)
-        and isinstance(checks["base_sepolia_rpc"]["detail"].get("result"), str)
-        else (
-            int(checks["base_sepolia_rpc"]["detail"], 16)
-            if checks["base_sepolia_rpc"]["live_mode"]
-            and isinstance(checks["base_sepolia_rpc"]["detail"], str)
-            else None
-        )
-    )
+def _probe_specs() -> dict[str, tuple[str, str, str, dict[str, str], Any, bool]]:
+    """Read-only key probes: (env var, method, url, headers, body, key_checked)."""
     # (env var, method, url, headers, body, key_checked). key_checked=False means the endpoint
     # answers without authenticating, so a 200 only proves the host is up (reported as UNVERIFIED).
     vision_env = "GOOGLE_CLOUD_VISION_API_KEY" if os.getenv("GOOGLE_CLOUD_VISION_API_KEY") else "GEMINI_API_KEY"
-    probes: dict[str, tuple[str, str, str, dict[str, str], Any, bool]] = {
+    return {
         "cloud_vision": (
             # A real images:annotate on a 1x1 PNG proves the key, the API being enabled, and billing.
             vision_env, "POST",
@@ -444,31 +482,89 @@ async def health_provenance() -> dict[str, Any]:
             {"Accept": "application/json", "Authorization": f"Bearer {os.getenv('BRIGHTDATA_API_KEY', '').strip()}"}, None, True,
         ),
     }
-    for name, (env_name, method, url, headers, probe_body, key_checked) in probes.items():
-        if not os.getenv(env_name):
-            checks[name] = {
-                "status": "unconfigured",
-                "state": "MISSING_KEY",
-                "latency_ms": 0.0,
-                "live_mode": False,
-                "is_live_http": False,
-                "source": "unconfigured",
-                "detail": f"{env_name} is not set",
-            }
-            continue
-        code, body, latency = await _probe_request(method, url, json_body=probe_body, headers=headers)
-        state, reason = _classify_probe(name, code, body, key_checked)
-        checks[name] = {
-            "status": "live" if state == "LIVE" else "error",
-            "state": state,
-            "reason": reason,
-            "http_status": code,
-            "latency_ms": latency,
-            "live_mode": state == "LIVE",
-            "is_live_http": code != 0,
-            "source": "live-http" if code != 0 else "unreachable",
-            "detail": body,
+
+
+async def _run_probe(name: str, spec: tuple[str, str, str, dict[str, str], Any, bool]) -> dict[str, Any]:
+    env_name, method, url, headers, probe_body, key_checked = spec
+    if not os.getenv(env_name):
+        return {
+            "status": "unconfigured",
+            "state": "MISSING_KEY",
+            "latency_ms": 0.0,
+            "live_mode": False,
+            "is_live_http": False,
+            "source": "unconfigured",
+            "detail": f"{env_name} is not set",
         }
+    code, body, latency = await _probe_request(method, url, json_body=probe_body, headers=headers, timeout=PROBE_TIMEOUT_SECONDS)
+    state, reason = _classify_probe(name, code, body, key_checked)
+    return {
+        "status": "live" if state == "LIVE" else "error",
+        "state": state,
+        "reason": reason,
+        "http_status": code,
+        "latency_ms": latency,
+        "live_mode": state == "LIVE",
+        "is_live_http": code != 0,
+        "source": "live-http" if code != 0 else "unreachable",
+        "detail": _safe_probe_summary(name, code, body),
+    }
+
+
+@router.get("/health-provenance")
+async def health_provenance() -> dict[str, Any]:
+    """Probe configured integrations and expose provenance, status, and latency.
+
+    All probes run concurrently, each bounded by PROBE_TIMEOUT_SECONDS. `detail` is a short browser-safe summary:
+    raw provider bodies (which can carry account data) are never returned.
+    """
+    _reload_dotenv()
+    checks: dict[str, Any] = {}
+
+    async def rpc_check() -> dict[str, Any]:
+        # Public RPC, no secret: _timed_request's "reachable" result is the full check here.
+        res = await _timed_request(
+            "POST",
+            os.getenv("BASE_SEPOLIA_RPC_URL", BASE_RPC_URL),
+            json_body={"jsonrpc": "2.0", "id": 1, "method": "eth_chainId", "params": []},
+            timeout=PROBE_TIMEOUT_SECONDS,
+        )
+        raw = res["detail"]
+        try:
+            chain_id = int(raw["result"] if isinstance(raw, dict) else raw, 16) if res["live_mode"] else None
+        except (TypeError, ValueError, KeyError):
+            chain_id = None
+        res["chain_id"] = chain_id
+        res["detail"] = f"eth_chainId -> {chain_id}" if res["live_mode"] else "request failed"
+        return res
+    probes = _probe_specs()
+    run_probe = _run_probe
+
+
+    async def crs_probe() -> dict[str, Any]:
+        # CRS needs a username/password login before any authenticated call, so it gets its own probe.
+        if not (os.getenv("CRS_USERNAME") and os.getenv("CRS_PASSWORD")):
+            return {
+                "status": "unconfigured", "state": "MISSING_KEY", "latency_ms": 0.0, "live_mode": False,
+                "is_live_http": False, "source": "unconfigured",
+                "detail": "CRS_USERNAME / CRS_PASSWORD not set (CRS_API_KEY alone is not a sandbox user token)",
+            }
+        try:
+            code, body, latency, error = await asyncio.wait_for(_crs_request("GET", "/users", timeout=PROBE_TIMEOUT_SECONDS), 2 * PROBE_TIMEOUT_SECONDS + 1)
+        except asyncio.TimeoutError:
+            code, body, latency, error = 0, None, round(1000 * (2 * PROBE_TIMEOUT_SECONDS + 1), 1), "CRS login/probe timed out"
+        unreachable = bool(error) and any(s in error for s in ("timed out", "unreachable", "HTTP 0 "))
+        state, reason = (("UNREACHABLE" if unreachable else "AUTH_ERROR"), error) if error else _classify_probe("crs", code, body, True)
+        return {
+            "status": "live" if state == "LIVE" else "error", "state": state, "reason": _redact_secrets(reason), "http_status": code,
+            "latency_ms": latency, "live_mode": state == "LIVE", "is_live_http": code != 0,
+            "source": "live-http" if code else "unreachable",
+            "detail": _safe_probe_summary("crs", code, body) if not error else _redact_secrets(error),
+        }
+
+    names = ["base_sepolia_rpc", *probes, "crs", "wajo"]
+    results = await asyncio.gather(rpc_check(), *(run_probe(n, s) for n, s in probes.items()), crs_probe(), _wajo_check())
+    checks.update(dict(zip(names, results)))
     # Factory has no hosted API: readiness is the droid CLI being installed plus FACTORY_API_KEY. The key itself is
     # only exercised by a real `droid exec` (which spends Factory credits), so it stays UNVERIFIED until then.
     import shutil
@@ -487,22 +583,6 @@ async def health_provenance() -> dict[str, Any]:
         "source": "local-cli-check", "detail": factory_reason,
     }
 
-    # CRS needs a username/password login before any authenticated call, so it gets its own probe.
-    if not (os.getenv("CRS_USERNAME") and os.getenv("CRS_PASSWORD")):
-        checks["crs"] = {
-            "status": "unconfigured", "state": "MISSING_KEY", "latency_ms": 0.0, "live_mode": False,
-            "is_live_http": False, "source": "unconfigured",
-            "detail": "CRS_USERNAME / CRS_PASSWORD not set (CRS_API_KEY alone is not a sandbox user token)",
-        }
-    else:
-        code, body, latency, error = await _crs_request("GET", "/users")
-        state, reason = ("AUTH_ERROR", error) if error else _classify_probe("crs", code, body, True)
-        checks["crs"] = {
-            "status": "live" if state == "LIVE" else "error", "state": state, "reason": reason, "http_status": code,
-            "latency_ms": latency, "live_mode": state == "LIVE", "is_live_http": code != 0,
-            "source": "live-http" if code else "unreachable", "detail": body if not error else error,
-        }
-    checks["wajo"] = await _wajo_check()
     checks["fetchai"] = _fetchai_check()
     any_live = any(item.get("live_mode", False) for item in checks.values())
     return {
@@ -514,20 +594,16 @@ async def health_provenance() -> dict[str, Any]:
 
 
 async def _wajo_check() -> dict[str, Any]:
-    """Probe the key with Fo's read-only list_fo_conversations; it is user-scoped, so a bad key gets 401."""
+    """Legacy-shaped Wajo check built on wajo_call.status() (read-only list_fo_conversations, cached, 3 s timeout)."""
     from integrations import wajo_call
 
     base = {"reason": None, "http_status": 0, "latency_ms": 0.0, "live_mode": False, "is_live_http": False}
     missing = [n for n, v in (("WAJO_API_KEY", wajo_call.wajo_api_key()), ("CFO_ALERT_PHONE_NUMBER", os.getenv("CFO_ALERT_PHONE_NUMBER"))) if not v]
     if missing:
         return {**base, "status": "unconfigured", "state": "MISSING_KEY", "source": "env", "detail": f"{' / '.join(missing)} not set; escalations are dry runs"}
-    t0 = time.perf_counter()
-    try:
-        await wajo_call.mcp_tool_call("list_fo_conversations", {}, timeout=8.0)
-    except Exception as exc:
-        text = str(exc)
-        state = "AUTH_ERROR" if "401" in text or "invalid api key" in text else "UNREACHABLE"
-        return {**base, "status": "error", "state": state, "source": "wajo-mcp", "latency_ms": round((time.perf_counter() - t0) * 1000, 1), "detail": f"{wajo_call.wajo_mcp_url()}: {text[:200]}"}
+    st = await wajo_call.status()
+    if st["code"] != "LIVE":
+        return {**base, "status": "error", "state": st["code"], "source": "wajo-mcp", "latency_ms": st["latency_ms"], "detail": st["detail"]}
     return {
         **base,
         "status": "live",
@@ -536,8 +612,9 @@ async def _wajo_check() -> dict[str, Any]:
         "live_mode": True,
         "is_live_http": True,
         "source": "wajo-mcp",
-        "latency_ms": round((time.perf_counter() - t0) * 1000, 1),
-        "detail": f"key accepted by {wajo_call.wajo_mcp_url()} (read-only probe); calls go through Fo's ask_fo",
+        "latency_ms": st["latency_ms"],
+        "detail": f"key accepted by {wajo_call.wajo_mcp_url()} (read-only probe); calls go through Fo's ask_fo"
+        + ("; WAJO_DRY_RUN is set" if st["state"] == "dry_run" else ""),
     }
 
 
@@ -583,10 +660,40 @@ def _status_from_check(provider: str, check: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+_STATUS_CACHE: dict[str, Any] = {}
+_STATUS_ENV_EXTRA = (
+    "HEISTBOX_OLLAMA_URL", "OLLAMA_HOST", "HEISTBOX_OLLAMA_MODEL", "WAJO_MCP_URL", "WAJO_DRY_RUN", "BASE_SEPOLIA_RPC_URL",
+    "ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL", "HEISTBOX_CLAUDE_MODEL", "GEMINI_TEXT_MODEL", "BITDEER_BASE_URL",
+)
+
+
+def _status_fingerprint() -> str:
+    from integrations.status import SECRET_ENV_NAMES
+
+    names = sorted(set(SECRET_ENV_NAMES) | set(KEY_ENV_NAMES) | set(_STATUS_ENV_EXTRA))
+    return hashlib.sha256("\x00".join(f"{n}={os.getenv(n, '')}" for n in names).encode("utf-8")).hexdigest()
+
+
 @router.get("/status")
-async def integration_status() -> dict[str, Any]:
+async def integration_status(fresh: bool = False) -> dict[str, Any]:
+    """Every integration in one call.
+
+    Legacy fields (`providers`, `latency_ms`, `detail`, `live_mode`) are kept for the pre-3D UI. New UIs read
+    `services`: {name: {state, latency_ms, detail, code, label, fallback}} (see integrations/status.py and
+    contracts/api.md). Results are cached for STATUS_CACHE_SECONDS unless `?fresh=1`; the cache is keyed on the
+    configured env, so changing a key re-probes immediately.
+    """
     _reload_dotenv()
-    health = await health_provenance()
+    fp = _status_fingerprint()
+    cached = _STATUS_CACHE.get("value")
+    if not fresh and cached and _STATUS_CACHE.get("fp") == fp and time.monotonic() - _STATUS_CACHE.get("at", 0.0) < STATUS_CACHE_SECONDS:
+        return {**cached, "cached": True}
+    from integrations import status as status_module
+
+    started = time.perf_counter()
+    local = await status_module.local_checks(fresh=fresh)  # in-process checks first: they hold the GIL
+    health, extra = await asyncio.gather(health_provenance(), status_module.extra_checks())
+    extra.update(local)
     provider_names = {
         "anthropic": "anthropic",
         "cloud_vision": "cloud_vision",
@@ -613,17 +720,60 @@ async def integration_status() -> dict[str, Any]:
     providers["x402"] = "LIVE" if os.getenv("X402_SIGNER_PRIVATE_KEY") and rpc.get("live_mode") else "MISSING"
     latency["x402"] = rpc.get("latency_ms", 0.0)
     details["x402"] = "Base Sepolia RPC and signer readiness"
-    return {"providers": providers, "latency_ms": latency, "detail": details, "live_mode": all(value == "LIVE" for value in providers.values())}
+    services = status_module.build_services(health["integrations"], extra)
+    result = {
+        "providers": providers,
+        "latency_ms": latency,
+        "detail": details,
+        "live_mode": all(value == "LIVE" for value in providers.values()),
+        "services": services,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "probe_ms": round((time.perf_counter() - started) * 1000, 1),
+        "cached": False,
+    }
+    _STATUS_CACHE.update(value=result, fp=fp, at=time.monotonic())
+    return result
+
+
+@router.get("/wajo/status")
+async def wajo_status(fresh: bool = False) -> dict[str, Any]:
+    """Browser-safe Wajo state (live | offline | missing_key | dry_run) and the last request/response summary.
+
+    The probe is Fo's read-only list_fo_conversations (3 s timeout, cached 20 s). No key or phone number is returned.
+    """
+    from integrations import wajo_call
+
+    _reload_dotenv()
+    return await wajo_call.status(fresh=fresh)
+
+
+@router.get("/wajo/audit")
+async def wajo_audit(limit: int = 50) -> dict[str, Any]:
+    """Every Wajo escalation attempt this process made (live, dry_run, cooldown, failure, timeout), newest first."""
+    from integrations import wajo_call
+
+    entries = wajo_call.audit_entries(max(1, min(limit, wajo_call.AUDIT_MAX)))
+    return {"entries": entries, "count": len(entries), "max_kept": wajo_call.AUDIT_MAX}
+
+
+def _is_local_request(request: Request) -> bool:
+    """Direct loopback connection with no proxy/tunnel forwarding headers."""
+    host = request.client.host if request.client else ""
+    forwarded = any(request.headers.get(h) for h in ("x-forwarded-for", "forwarded", "cf-connecting-ip", "x-real-ip"))
+    return host in {"127.0.0.1", "::1", "localhost"} and not forwarded
 
 
 @router.post("/configure-keys")
-async def configure_keys(body: ConfigureKeysRequest) -> dict[str, Any]:
+async def configure_keys(body: ConfigureKeysRequest, request: Request) -> dict[str, Any]:
     unknown = sorted(set(body.keys) - set(KEY_ENV_NAMES))
     if unknown:
         raise HTTPException(status_code=422, detail={"unknown_keys": unknown, "allowed": list(KEY_ENV_NAMES)})
+    # Writing secrets to .env is a host-only operation: refuse anything that came through a tunnel or the network.
+    if not _is_local_request(request):
+        raise HTTPException(status_code=403, detail="keys can only be set from the host machine (loopback, no proxy)")
     cleaned = {key: value for key, value in body.keys.items() if isinstance(value, str) and value.strip()}
     _write_env(cleaned)
-    return await integration_status()
+    return await integration_status(fresh=True)
 
 
 def _poster_fallback(
@@ -658,6 +808,9 @@ def _poster_fallback(
             "risk_level": crs_rec.get("risk_level", "HIGH"),
         },
         "mugshot_data_url": mugshot_data_url,
+        "remix_poster_url": None,
+        "remix_status": "idle",
+        "remix_error": None,
         "x402_receipt": {
             "tx_hash": tx_hash,
             "chain_id": 84532,
@@ -702,7 +855,7 @@ _GENERIC_VISION_LABELS = {
 
 def _vision_key() -> str:
     """Cloud Vision API key: GOOGLE_CLOUD_VISION_API_KEY, else the GEMINI_API_KEY slot this project uses for it."""
-    return (os.getenv("GOOGLE_CLOUD_VISION_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    return (os.getenv("GOOGLE_CLOUD_VISION_API_KEY") or os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_API_REMIX_KEY") or "").strip()
 
 
 async def _cloud_vision_cues(frame_b64: str) -> tuple[dict[str, Any] | None, str | None]:
@@ -803,6 +956,447 @@ def _template_poster_roast(cues: dict[str, Any], judge_name: str) -> dict[str, s
     }
 
 
+def _remix_key() -> str:
+    """Gemini Remix API key: GEMINI_API_REMIX_KEY, else GEMINI_API_KEY."""
+    return (os.getenv("GEMINI_API_REMIX_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+
+
+def generate_wanted_poster_svg(
+    img_data_url: str,
+    judge_name: str,
+    alias_title: str,
+    outfit_roast: str,
+    bounty: str = "$5,000.00",
+    charges: str = "Attempted wire fraud, prompt injection against AI bank.",
+    busted_ms: float = 0.4,
+) -> str:
+    """Generate an authentic vintage Wild West / GTA-style Wanted Poster SVG embedding the suspect mugshot."""
+    clean_name = html.escape((judge_name or "JUDGE").upper())
+    clean_alias = html.escape((alias_title or "THE UNNAMED BANDIT").upper())
+    clean_roast = html.escape(outfit_roast or "Nice disguise, zero cover.")
+    clean_charges = html.escape(charges or "Grand prompt injection, social engineering AI bankers.")
+    clean_bounty = html.escape(bounty or "$5,000.00")
+
+    # Wrap roast text into 2 lines
+    import textwrap
+    wrapped_lines = textwrap.wrap(clean_roast, width=68)[:3]
+    tspan_roast = "".join(
+        f'<tspan x="400" dy="{22 if i > 0 else 0}">“{line}”</tspan>' if i == 0 else f'<tspan x="400" dy="22">{line}</tspan>'
+        for i, line in enumerate(wrapped_lines)
+    )
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1150" width="800" height="1150">
+  <defs>
+    <!-- Vintage paper texture simulation -->
+    <radialGradient id="paperGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#faeccb"/>
+      <stop offset="60%" stop-color="#eed8a8"/>
+      <stop offset="90%" stop-color="#d4b578"/>
+      <stop offset="100%" stop-color="#b89352"/>
+    </radialGradient>
+
+    <!-- Photo Sepia & Halftone Engraving Filter -->
+    <filter id="vintagePhoto" x="0%" y="0%" width="100%" height="100%">
+      <feColorMatrix type="matrix" values="
+        0.393 0.769 0.189 0 0
+        0.349 0.686 0.168 0 0
+        0.272 0.534 0.131 0 0
+        0 0 0 1 0"/>
+      <feComponentTransfer>
+        <feFuncR type="linear" slope="1.15" intercept="-0.05"/>
+        <feFuncG type="linear" slope="1.0" intercept="-0.05"/>
+        <feFuncB type="linear" slope="0.8" intercept="-0.05"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+
+  <!-- Distressed Paper Base -->
+  <rect x="0" y="0" width="800" height="1150" fill="url(#paperGrad)"/>
+
+  <!-- Outer Aged Borders -->
+  <rect x="24" y="24" width="752" height="1102" fill="none" stroke="#3b220c" stroke-width="10"/>
+  <rect x="36" y="36" width="728" height="1078" fill="none" stroke="#5c3814" stroke-width="3" stroke-dasharray="8,4"/>
+  <rect x="44" y="44" width="712" height="1062" fill="none" stroke="#7a1010" stroke-width="2"/>
+
+  <!-- Corner Ornamental Stars -->
+  <text x="60" y="75" font-family="Georgia, serif" font-size="28" fill="#7a1010" text-anchor="middle">★</text>
+  <text x="740" y="75" font-family="Georgia, serif" font-size="28" fill="#7a1010" text-anchor="middle">★</text>
+  <text x="60" y="1085" font-family="Georgia, serif" font-size="28" fill="#7a1010" text-anchor="middle">★</text>
+  <text x="740" y="1085" font-family="Georgia, serif" font-size="28" fill="#7a1010" text-anchor="middle">★</text>
+
+  <!-- Top Headers -->
+  <text x="400" y="85" font-family="Courier, monospace" font-size="16" font-weight="900" fill="#4a2e12" text-anchor="middle" letter-spacing="6">★ HEISTBOX VAULT POLICE DEPT ★</text>
+  <text x="400" y="165" font-family="Impact, 'Arial Black', serif" font-size="105" font-weight="900" fill="#7a1010" text-anchor="middle" letter-spacing="10">WANTED</text>
+  <text x="400" y="205" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="bold" font-style="italic" fill="#2a1a08" text-anchor="middle" letter-spacing="3">DEAD OR ALIVE — PREFERABLY BUSTED</text>
+
+  <line x1="120" y1="225" x2="680" y2="225" stroke="#3b220c" stroke-width="4"/>
+  <line x1="120" y1="230" x2="680" y2="230" stroke="#7a1010" stroke-width="1.5"/>
+
+  <!-- Mugshot Frame with Suspect Photo -->
+  <g transform="translate(160, 255)">
+    <rect x="-10" y="-10" width="500" height="420" fill="#2a1a08" rx="4"/>
+    <rect x="-4" y="-4" width="488" height="408" fill="#d8be8d" rx="2"/>
+    <image href="{img_data_url}" x="0" y="0" width="480" height="400" preserveAspectRatio="xMidYMid slice" filter="url(#vintagePhoto)"/>
+    <rect x="0" y="0" width="480" height="400" fill="none" stroke="#2a1a08" stroke-width="6"/>
+    
+    <!-- Red BUSTED / AIRLOCKED Stamp -->
+    <g transform="translate(320, 340) rotate(-14)">
+      <rect x="-10" y="-20" width="160" height="42" fill="#7a1010" fill-opacity="0.9" rx="4" stroke="#ffffff" stroke-width="2"/>
+      <text x="70" y="8" font-family="Impact, sans-serif" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="2">BUSTED {busted_ms:g}ms</text>
+    </g>
+  </g>
+
+  <!-- Suspect Alias & Identity -->
+  <text x="400" y="730" font-family="Impact, serif" font-size="44" font-weight="bold" fill="#2a1a08" text-anchor="middle" letter-spacing="3">“{clean_alias}”</text>
+  <text x="400" y="765" font-family="Courier, monospace" font-size="20" font-weight="bold" fill="#7a1010" text-anchor="middle" letter-spacing="4">IDENTITY: {clean_name}</text>
+
+  <!-- Outfit & Disguise Roast Quote -->
+  <rect x="90" y="795" width="620" height="85" fill="#e8d09f" fill-opacity="0.6" stroke="#4a2e12" stroke-width="1.5" rx="4"/>
+  <text x="400" y="830" font-family="Georgia, serif" font-size="16" font-weight="bold" font-style="italic" fill="#2a1a08" text-anchor="middle">
+    {tspan_roast}
+  </text>
+
+  <!-- Crime Charges -->
+  <text x="400" y="910" font-family="Courier, monospace" font-size="14" font-weight="bold" fill="#3b220c" text-anchor="middle" letter-spacing="1">
+    CHARGES: {clean_charges[:72]}
+  </text>
+  <text x="400" y="930" font-family="Courier, monospace" font-size="13" font-style="italic" fill="#5c3814" text-anchor="middle">
+    Airlocked by PAIR Relational MVCC dry-run · {busted_ms:g}ms rollback latency
+  </text>
+
+  <!-- Reward Banner -->
+  <g transform="translate(100, 960)">
+    <rect x="0" y="0" width="600" height="95" fill="#7a1010" rx="8" stroke="#3b220c" stroke-width="4"/>
+    <rect x="6" y="6" width="588" height="83" fill="none" stroke="#faeccb" stroke-width="2" stroke-dasharray="6,3"/>
+    <text x="300" y="42" font-family="Impact, serif" font-size="34" font-weight="bold" fill="#faeccb" text-anchor="middle" letter-spacing="4">
+      REWARD {clean_bounty}
+    </text>
+    <text x="300" y="74" font-family="Courier, monospace" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+      PAYABLE IN BASE SEPOLIA x402 USDC UPON CAPTURE
+    </text>
+  </g>
+
+  <!-- Footer Disclaimer -->
+  <text x="400" y="1090" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#4a2e12" text-anchor="middle" letter-spacing="1">
+    AUTHENTICATED BY CLAUDE VISION × HEISTBOX AGENT BANK
+  </text>
+</svg>"""
+
+    b64 = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+    return f"data:image/svg+xml;base64,{b64}"
+
+
+async def _claude_remix_poster(
+    frame_b64: str,
+    judge_name: str,
+    alias_title: str | None = None,
+    outfit_roast: str | None = None,
+    rollback_ms: float = 0.4,
+    timeout: float = 12.0,
+) -> tuple[str | None, str | None, dict[str, Any] | None]:
+    """Use Claude Vision to analyze suspect photo, roast their outfit/props, and render an authentic Wanted Poster SVG."""
+    key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    if not key:
+        return None, "ANTHROPIC_API_KEY missing in .env", None
+
+    clean_b64 = frame_b64.split(",", 1)[1] if "," in frame_b64 else frame_b64
+    if "data:image/png" in frame_b64 or clean_b64.startswith("iVBOR"):
+        mime_type = "image/png"
+    elif "data:image/webp" in frame_b64 or clean_b64.startswith("UklGR"):
+        mime_type = "image/webp"
+    elif "data:image/gif" in frame_b64 or clean_b64.startswith("R0lGO"):
+        mime_type = "image/gif"
+    else:
+        mime_type = "image/jpeg"
+
+    parsed: dict[str, Any] = {}
+    try:
+        reply = await _request_json(
+            "POST",
+            os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com") + "/v1/messages",
+            json_body={
+                "model": os.getenv("ANTHROPIC_MODEL", "claude-haiku-5-5"),
+                "max_tokens": 1500,
+                "system": (
+                    "You are a quick-witted frontier sheriff and detective creating a vintage Wild West / GTA Wanted Poster "
+                    "for an AI bank heist suspect caught red-handed. Roast only what you actually see in the suspect's photo "
+                    "(clothing, props, sunglasses, lanyard, smirk, expression, background). Keep it witty, PG, and punchy. "
+                    "Reply with JSON only: {\"alias_title\": <=6 words, \"outfit_roast\": one sentence, "
+                    "\"charges\": one short sentence of bank heist charges, \"bounty\": \"$5,000.00\", "
+                    "\"megaphone_transcript\": one police helicopter line}."
+                ),
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "source": {"type": "base64", "media_type": mime_type, "data": clean_b64}},
+                            {"type": "text", "text": f"Suspect name: {judge_name} - Generate wanted poster dossier."},
+                        ],
+                    }
+                ],
+            },
+            headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
+            timeout=timeout,
+        )
+        if isinstance(reply, dict):
+            text = "".join(b.get("text") or "" for b in reply.get("content", []) if b.get("type") == "text")
+            if "{" in text and "}" in text:
+                parsed = json.loads(text[text.index("{") : text.rindex("}") + 1])
+    except Exception:
+        parsed = {}
+
+    alias = parsed.get("alias_title") or alias_title or "The Bank-Busting Bandit"
+    roast = parsed.get("outfit_roast") or outfit_roast or f"{judge_name} was caught with probable cause: nice disguise, zero cover."
+    charges = parsed.get("charges") or "Attempted wire fraud, social engineering AI bankers, prompt injection."
+    bounty = str(parsed.get("bounty") or "$5,000.00")
+    mega = parsed.get("megaphone_transcript")
+
+    img_data_url = frame_b64 if frame_b64.startswith("data:") else f"data:{mime_type};base64,{frame_b64}"
+    poster_svg_url = generate_wanted_poster_svg(
+        img_data_url=img_data_url,
+        judge_name=judge_name,
+        alias_title=alias,
+        outfit_roast=roast,
+        bounty=bounty,
+        charges=charges,
+        busted_ms=rollback_ms,
+    )
+    details = {
+        "alias_title": alias,
+        "outfit_roast": roast,
+        "charges": charges,
+        "bounty": bounty,
+        "megaphone_transcript": mega,
+    }
+    return poster_svg_url, None, details
+
+
+async def _openai_remix_poster(
+    frame_b64: str,
+    judge_name: str,
+    alias_title: str,
+    outfit_roast: str,
+    timeout: float = 20.0,
+) -> tuple[str | None, str | None]:
+    """Attempt OpenAI image generation if active credits exist."""
+    key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not key:
+        return None, "OPENAI_API_KEY missing in .env"
+
+    prompt = (
+        f"A vintage 1880s Wild West WANTED poster for suspect '{judge_name}', alias '{alias_title}'. "
+        f"Aged sepia parchment with distressed edges. Bold woodblock typography saying 'WANTED' at top, "
+        f"and reward '$5,000.00'. {outfit_roast}"
+    )
+
+    models = ["gpt-image-1-mini", "gpt-image-1", "dall-e-3"]
+    last_err = None
+    for model in models:
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout)) as client:
+                res = await client.post(
+                    "https://api.openai.com/v1/images/generations",
+                    headers={"Authorization": f"Bearer {key}"},
+                    json={"model": model, "prompt": prompt, "n": 1, "size": "1024x1024", "response_format": "b64_json"},
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    b64 = data["data"][0].get("b64_json")
+                    if b64:
+                        return f"data:image/png;base64,{b64}", None
+                else:
+                    err_text = res.text
+                    try:
+                        err_text = res.json().get("error", {}).get("message", res.text)
+                    except Exception:
+                        pass
+                    last_err = f"OpenAI {model} HTTP {res.status_code}: {err_text[:120]}"
+                    if res.status_code in (429, 401, 403):
+                        break
+        except Exception as exc:
+            last_err = f"OpenAI exception: {str(exc)[:120]}"
+
+    return None, last_err
+
+
+async def _gemini_remix_poster(
+    frame_b64: str,
+    judge_name: str,
+    alias_title: str,
+    outfit_roast: str,
+    timeout: float = 25.0,
+) -> tuple[str | None, str | None]:
+    """Send suspect photo + roast instructions to Gemini image remix -> (data_url, error_message)."""
+    key = _remix_key()
+    if not key:
+        return None, "GEMINI_API_REMIX_KEY missing in .env"
+
+    clean_b64 = frame_b64.split(",", 1)[1] if "," in frame_b64 else frame_b64
+    if "data:image/png" in frame_b64 or clean_b64.startswith("iVBOR"):
+        mime_type = "image/png"
+    elif "data:image/webp" in frame_b64 or clean_b64.startswith("UklGR"):
+        mime_type = "image/webp"
+    elif "data:image/gif" in frame_b64 or clean_b64.startswith("R0lGO"):
+        mime_type = "image/gif"
+    else:
+        mime_type = "image/jpeg"
+
+    prompt = (
+        f"You are the master graphic artist for HeistBox creating an authentic vintage WANTED poster.\n"
+        f"Suspect: {judge_name}, Alias: “{alias_title}”, Roast: “{outfit_roast}”.\n"
+        f"Transform this suspect photo into a 1880s Wild West wanted poster with bold WANTED typography, "
+        f"distressed sepia parchment, keeping their facial likeness from the photo."
+    )
+
+    models_to_try = [
+        "gemini-2.5-flash-image",
+        "gemini-3.1-flash-image",
+        "nano-banana-pro-preview",
+        "gemini-3-pro-image",
+    ]
+
+    last_error = None
+    for model_name in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"inline_data": {"mime_type": mime_type, "data": clean_b64}},
+                        {"text": prompt},
+                    ]
+                }
+            ],
+            "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout)) as client:
+                res = await client.post(url, json=payload)
+                if res.status_code == 200:
+                    data = res.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        for part in parts:
+                            if "inlineData" in part:
+                                out_mime = part["inlineData"].get("mimeType", "image/png")
+                                img_b64 = part["inlineData"].get("data", "")
+                                if img_b64:
+                                    return f"data:{out_mime};base64,{img_b64}", None
+                    last_error = f"{model_name}: 200 OK but no inlineData returned"
+                else:
+                    err_msg = res.text
+                    try:
+                        err_msg = res.json().get("error", {}).get("message", res.text)
+                    except Exception:
+                        pass
+                    last_error = f"{model_name} HTTP {res.status_code}: {err_msg[:140]}"
+                    if res.status_code in (402, 429):
+                        break
+        except Exception as exc:
+            last_error = f"{model_name} exception: {str(exc)[:140]}"
+
+    return None, last_error
+
+
+async def remix_wanted_poster_flow(
+    frame_b64: str,
+    judge_name: str,
+    alias_title: str | None = None,
+    outfit_roast: str | None = None,
+    rollback_ms: float = 0.4,
+    preferred_provider: str | None = "claude",
+) -> tuple[str | None, str | None, str, dict[str, Any] | None]:
+    """Orchestrate Wanted Poster remix: supports Claude, OpenAI, and Gemini with intelligent fallback."""
+    provider = (preferred_provider or "claude").lower()
+
+    # If user explicitly preferred OpenAI
+    if provider == "openai":
+        img, err = await _openai_remix_poster(frame_b64, judge_name, alias_title or "The Bandit", outfit_roast or "")
+        if img:
+            return img, None, "openai", None
+
+    # If user explicitly preferred Gemini
+    if provider == "gemini":
+        img, err = await _gemini_remix_poster(frame_b64, judge_name, alias_title or "The Bandit", outfit_roast or "")
+        if img:
+            return img, None, "gemini", None
+
+    # Claude is primary provider: uses Claude Vision to inspect suspect photo and renders authentic Wanted Poster SVG
+    if os.getenv("ANTHROPIC_API_KEY"):
+        img, err, details = await _claude_remix_poster(frame_b64, judge_name, alias_title, outfit_roast, rollback_ms=rollback_ms)
+        if img:
+            return img, None, "claude-vision", details
+
+    # Fallback to OpenAI if configured
+    if os.getenv("OPENAI_API_KEY"):
+        img, err = await _openai_remix_poster(frame_b64, judge_name, alias_title or "The Bandit", outfit_roast or "")
+        if img:
+            return img, None, "openai", None
+
+    # Fallback to Gemini if configured
+    if _remix_key():
+        img, err = await _gemini_remix_poster(frame_b64, judge_name, alias_title or "The Bandit", outfit_roast or "")
+        if img:
+            return img, None, "gemini", None
+
+    return None, "No active remix AI provider available", "none", None
+
+
+class RemixPosterRequest(BaseModel):
+    poster_id: str | None = None
+    webcam_frame_base64: str | None = None
+    mugshot_data_url: str | None = None
+    judge_name: str = "Judge"
+    alias_title: str | None = None
+    outfit_roast: str | None = None
+    provider: str = "claude"  # "claude", "openai", "gemini"
+
+
+@router.post("/remix-poster")
+async def remix_poster(body: RemixPosterRequest) -> dict[str, Any]:
+    """Dedicated endpoint to remix a suspect photo into a Wanted Poster with Claude or OpenAI or Gemini."""
+    _reload_dotenv()
+    frame_b64 = body.webcam_frame_base64
+    if not frame_b64 and body.mugshot_data_url and "," in body.mugshot_data_url:
+        frame_b64 = body.mugshot_data_url.split(",", 1)[1]
+    elif not frame_b64 and body.mugshot_data_url:
+        frame_b64 = body.mugshot_data_url
+
+    if not frame_b64:
+        raise HTTPException(status_code=400, detail="webcam_frame_base64 or mugshot_data_url is required")
+
+    remix_url, error, provider_used, details = await remix_wanted_poster_flow(
+        frame_b64,
+        judge_name=body.judge_name,
+        alias_title=body.alias_title,
+        outfit_roast=body.outfit_roast,
+        preferred_provider=body.provider,
+    )
+
+    alias = (details and details.get("alias_title")) or body.alias_title or "The Bank-Busting Bandit"
+    roast = (details and details.get("outfit_roast")) or body.outfit_roast or f"{body.judge_name} was caught hacking the HeistBox vault."
+
+    if body.poster_id and body.poster_id in _POSTER_STORE:
+        if remix_url:
+            _POSTER_STORE[body.poster_id]["remix_poster_url"] = remix_url
+            _POSTER_STORE[body.poster_id]["remix_status"] = "success"
+            _POSTER_STORE[body.poster_id]["alias_title"] = alias
+            _POSTER_STORE[body.poster_id]["outfit_roast"] = roast
+        else:
+            _POSTER_STORE[body.poster_id]["remix_error"] = error
+
+    return {
+        "poster_id": body.poster_id,
+        "remix_poster_url": remix_url,
+        "remix_status": "success" if remix_url else "failed",
+        "remix_error": error,
+        "provider": provider_used,
+        "alias_title": alias,
+        "outfit_roast": roast,
+        "details": details,
+    }
 @router.post("/roast-and-poster")
 @router.post("/wanted-poster")
 async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
@@ -850,6 +1444,27 @@ async def roast_and_poster(body: RoastAndPosterRequest) -> dict[str, Any]:
             result["outfit_roast"] = roast["outfit_roast"]
             if not sql_roast and roast.get("megaphone_transcript"):
                 result["megaphone_transcript"] = roast["megaphone_transcript"]
+
+            # Trigger Wanted Poster Remix with Claude or OpenAI
+            remix_url, remix_err, remix_prov, remix_det = await remix_wanted_poster_flow(
+                frame_b64,
+                judge_name=body.judge_name,
+                alias_title=result["alias_title"],
+                outfit_roast=result["outfit_roast"],
+                rollback_ms=body.rollback_ms or 0.4,
+                preferred_provider="claude",
+            )
+            if remix_url:
+                result["remix_poster_url"] = remix_url
+                result["remix_status"] = "success"
+                live_sources.append(f"{remix_prov}-remix")
+                if remix_det and remix_det.get("alias_title"):
+                    result["alias_title"] = remix_det["alias_title"]
+                if remix_det and remix_det.get("outfit_roast"):
+                    result["outfit_roast"] = remix_det["outfit_roast"]
+            else:
+                result["remix_status"] = "fallback"
+                result["remix_error"] = remix_err
 
     if os.getenv("CARTESIA_API_KEY"):
         audio_b64 = await _cartesia_tts(result["megaphone_transcript"], timeout=6.0)
@@ -979,8 +1594,9 @@ async def voice_bribe(body: VoiceBribeRequest) -> dict[str, Any]:
             "POST",
             os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com") + "/v1/messages",
             json_body={
-                "model": os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest"),
-                "max_tokens": 200,
+                # Same model as the rest of the kernel; the old "claude-3-5-sonnet-latest" default is retired.
+                "model": os.getenv("ANTHROPIC_MODEL", "claude-haiku-5-5"),
+                "max_tokens": 1000,
                 "messages": [
                     {
                         "role": "user",
@@ -993,22 +1609,26 @@ async def voice_bribe(body: VoiceBribeRequest) -> dict[str, Any]:
                 ],
             },
             headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
+            timeout=8.0,
         )
-        claude = _require_live_response("anthropic", claude)
+        if claude is None:
+            # Key present but Claude is down/slow: answer with the canned banker line instead of failing the game.
+            result["reason"] = "anthropic request failed or timed out; canned reply"
         if isinstance(claude, dict):
             result["claude_raw"] = claude
             content = claude.get("content")
-            if isinstance(content, list) and content and isinstance(content[0], dict) and content[0].get("text"):
-                result["banker_reply"] = str(content[0]["text"])
+            text_blocks = [b for b in content if isinstance(b, dict) and b.get("type") == "text" and b.get("text")] if isinstance(content, list) else []
+            if text_blocks:
+                result["banker_reply"] = str(text_blocks[0]["text"])
                 try:
-                    text = str(content[0]["text"]).strip().removeprefix("```json").removesuffix("```").strip()
+                    text = str(text_blocks[0]["text"]).strip().removeprefix("```json").removesuffix("```").strip()
                     semantic = json.loads(text)
                     if isinstance(semantic, dict):
                         result["semantic_intent"] = semantic
                         result["banker_reply"] = str(semantic.get("banker_reply", result["banker_reply"]))
                 except (TypeError, json.JSONDecodeError):
                     result["semantic_intent"] = {"raw_text": result["banker_reply"]}
-            live_sources.append("anthropic")
+                live_sources.append("anthropic")
 
     bitdeer_key = os.getenv("BITDEER_API_KEY")
     if bitdeer_key:
@@ -1017,6 +1637,7 @@ async def voice_bribe(body: VoiceBribeRequest) -> dict[str, Any]:
             os.getenv("BITDEER_BASE_URL", "https://api.bitdeer.ai/v1/chat/completions"),
             json_body={"model": "standard-llm-judge", "messages": [{"role": "user", "content": body.transcript}]},
             headers={"Authorization": f"Bearer {bitdeer_key}"},
+            timeout=6.0,
         )
         if isinstance(judge, dict):
             result["bitdeer_raw"] = judge
@@ -1032,35 +1653,40 @@ CRS_SANDBOX_BASE = "https://api-sandbox.stitchcredit.com/api"
 _CRS_TOKENS: dict[str, str] = {}
 
 
-async def _crs_login() -> tuple[str | None, str | None]:
+def _timeout_kw(timeout: float) -> dict[str, float]:
+    """Pass a non-default timeout through to _probe_request (kept implicit at the default so test stubs stay simple)."""
+    return {} if timeout == TIMEOUT_SECONDS else {"timeout": timeout}
+
+
+async def _crs_login(timeout: float = TIMEOUT_SECONDS) -> tuple[str | None, str | None]:
     """Log in to the CRS (StitchCredit) sandbox with CRS_USERNAME/CRS_PASSWORD -> (user token, error)."""
     username, password = os.getenv("CRS_USERNAME", "").strip(), os.getenv("CRS_PASSWORD", "").strip()
     if not username or not password:
         return None, "CRS_USERNAME / CRS_PASSWORD not set in .env (the sandbox needs a login; CRS_API_KEY is not a user token)"
     code, body, _ = await _probe_request(
         "POST", f"{os.getenv('CRS_BASE_URL', CRS_SANDBOX_BASE)}/users/login",
-        json_body={"username": username, "password": password}, headers={"Accept": "application/json"},
+        json_body={"username": username, "password": password}, headers={"Accept": "application/json"}, **_timeout_kw(timeout),
     )
     if code != 200 or not isinstance(body, dict) or not body.get("token"):
-        return None, f"CRS login failed: HTTP {code} {str(body)[:160]}"
+        return None, _redact_secrets(f"CRS login failed: HTTP {code} {str(body)[:160]}")
     _CRS_TOKENS["token"] = body["token"]
     if body.get("refreshToken"):
         _CRS_TOKENS["refresh"] = body["refreshToken"]
     return body["token"], None
 
 
-async def _crs_request(method: str, path: str, json_body: Any = None) -> tuple[int, Any, float, str | None]:
+async def _crs_request(method: str, path: str, json_body: Any = None, timeout: float = TIMEOUT_SECONDS) -> tuple[int, Any, float, str | None]:
     """Authenticated CRS sandbox call: cached token, refresh-token on 401, full re-login as a last resort."""
     base = os.getenv("CRS_BASE_URL", CRS_SANDBOX_BASE)
     token = _CRS_TOKENS.get("token")
     if not token:
-        token, error = await _crs_login()
+        token, error = await _crs_login(timeout)
         if not token:
             return 0, None, 0.0, error
     for attempt in range(2):
         code, body, latency = await _probe_request(
             method, f"{base}{path}", json_body=json_body,
-            headers={"Accept": "application/json", "Authorization": f"Bearer {token}"},
+            headers={"Accept": "application/json", "Authorization": f"Bearer {token}"}, **_timeout_kw(timeout),
         )
         if code != 401 or attempt:
             return code, body, latency, None
@@ -1566,53 +2192,35 @@ async def _provider_action(kind: str, body: ProviderRequest) -> dict[str, Any]:
         "source": "local-fallback",
         "payload": body.payload,
     }
-    if kind == "spacetimedb-sync":
-        stdb_uri = os.getenv("SPACETIMEDB_URI")
-        stdb_token = os.getenv("SPACETIMEDB_TOKEN")
-        if stdb_uri and stdb_token:
-            live = await _request_json(
-                "POST",
-                stdb_uri.rstrip("/") + "/database/call/sync_heist_telemetry",
-                json_body=body.payload,
-                headers={"Authorization": f"Bearer {stdb_token}"},
-            )
-            if live is not None:
-                result.update({"provider_raw": live, "is_live_http": True, "source": "spacetimedb"})
-        result.update({"synced": True, "module": "heistbox_telemetry", "latency_ms": 1.2})
-    else:
-        live_sources: list[str] = []
-        bright_key = os.getenv("BRIGHTDATA_API_KEY")
-        if bright_key:
-            live = await _request_json(
-                "POST",
-                os.getenv("BRIGHTDATA_BASE_URL", "https://api.brightdata.com/datasets/v3/trigger"),
-                json_body=body.payload,
-                headers={"Authorization": f"Bearer {bright_key}"},
-            )
-            if live is not None:
-                result["brightdata_raw"] = live
-                live_sources.append("brightdata")
-        apify_key = os.getenv("APIFY_API_TOKEN")
-        if apify_key:
-            live = await _request_json(
-                "POST",
-                os.getenv("APIFY_BASE_URL", "https://api.apify.com/v2/acts/apify~web-scraper/runs"),
-                json_body=body.payload,
-                headers={"Authorization": f"Bearer {apify_key}"},
-            )
-            if live is not None:
-                result["apify_raw"] = live
-                live_sources.append("apify")
-        result.update(
-            {
-                "vendor_domain_verified": False,
-                "fraud_dataset_stats": {"status": "live" if live_sources else "fallback"},
-                "sources": live_sources,
-                "is_live_http": bool(live_sources),
-                "source": "+".join(live_sources) if live_sources else "local-fallback",
-            }
+    # Only SpacetimeDB sync is routed here. (A dead branch that POSTed the raw payload to Bright Data's dataset
+    # trigger and an Apify actor run, both paid bulk jobs, was removed; OSINT lives in /osint-enrich.)
+    started = time.perf_counter()
+    stdb_uri = os.getenv("SPACETIMEDB_URI")
+    stdb_token = os.getenv("SPACETIMEDB_TOKEN")
+    if stdb_uri and stdb_token:
+        # SPACETIMEDB_URI is .../v1/database/<name_or_identity>; reducers are at .../call/<reducer>.
+        live = await _request_json(
+            "POST",
+            spacetimedb_reducer_url(stdb_uri, "sync_heist_telemetry"),
+            json_body=body.payload,
+            headers={"Authorization": f"Bearer {stdb_token}"},
+            timeout=3.0,
         )
+        if live is not None:
+            result.update({"provider_raw": live, "is_live_http": True, "source": "spacetimedb"})
+        else:
+            result["reason"] = "SpacetimeDB reducer call failed or timed out"
+    else:
+        result["reason"] = "SPACETIMEDB_URI / SPACETIMEDB_TOKEN not set"
+    result.update({"synced": True, "module": "heistbox_telemetry", "latency_ms": round((time.perf_counter() - started) * 1000, 2)})
     return result
+
+
+def spacetimedb_reducer_url(uri: str, reducer: str) -> str:
+    base = uri.rstrip("/")
+    if "/database/" not in base:  # bare host: the database name must come from SPACETIMEDB_id
+        base = f"{base}/v1/database/{os.getenv('SPACETIMEDB_id', '').strip()}"
+    return f"{base}/call/{reducer}"
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -1686,6 +2294,8 @@ async def droid_patch(body: ProviderRequest) -> dict[str, Any]:
 
 
 MOSS_ATTACK_INDEX = os.getenv("MOSS_ATTACK_INDEX", "heistbox-attacks")
+MOSS_LOAD_TIMEOUT_SECONDS = 12.0  # first call downloads the index
+MOSS_QUERY_TIMEOUT_SECONDS = 3.0
 _MOSS_CLIENT: Any = None
 _MOSS_LOADED: asyncio.Lock | None = None
 
@@ -1730,13 +2340,18 @@ async def moss_deception(body: ProviderRequest) -> dict[str, Any]:
         from inferedge_moss import QueryOptions
 
         started = time.perf_counter()
-        client = await moss_attack_index()
+        client = await asyncio.wait_for(moss_attack_index(), MOSS_LOAD_TIMEOUT_SECONDS)
         loaded_ms = round((time.perf_counter() - started) * 1000, 1)
         started = time.perf_counter()
-        res = await client.query(MOSS_ATTACK_INDEX, prompt[:2000], QueryOptions(top_k=int(body.payload.get("top_k", 5))))
+        res = await asyncio.wait_for(
+            client.query(MOSS_ATTACK_INDEX, prompt[:2000], QueryOptions(top_k=int(body.payload.get("top_k", 5)))),
+            MOSS_QUERY_TIMEOUT_SECONDS,
+        )
         query_ms = round((time.perf_counter() - started) * 1000, 2)
     except ImportError:
         raise HTTPException(status_code=503, detail="inferedge-moss SDK is not installed")
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="[SPONSOR_UNAVAILABLE] Moss index load/query timed out")
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"[SPONSOR_UNAVAILABLE] Moss query failed: {exc}")
     neighbours = [

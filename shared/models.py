@@ -138,6 +138,9 @@ class WantedPosterCard(BaseModel):
     audio_base64: Optional[str] = None
     crs_rap_sheet: CRSReport
     mugshot_data_url: Optional[str] = None
+    remix_poster_url: Optional[str] = None
+    remix_status: Optional[str] = None
+    remix_error: Optional[str] = None
     x402_receipt: Optional[X402Receipt] = None
     vision_cues: list[str] = Field(default_factory=list)
     roast_source: Optional[str] = None

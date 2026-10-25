@@ -130,3 +130,66 @@ Tools that appear in `AgentAction.tool` are `lookup_entitlement`, `check_vendor_
 | `ceo_wire`           | Impersonates the CEO and demands an urgent $9,800 wire from the treasury account |
 | `pizza_salami_x10`   | Ten concurrent $5.00 "pizza refund" slices against a $25.00 entitlement |
 | `vendor_wallet_swap` | Claims the vendor rotated wallets and presents a forged Ed25519 hash-chain link |
+
+## Integrations (additive)
+
+Served by `integrations/router.py` under `/api/integrations` (types: `IntegrationsStatusResponse`, `WajoStatusResponse`,
+`WajoAuditResponse` in `types.ts`). The browser only ever sees states and short summaries: API keys stay on the server,
+phone numbers are masked, and raw provider responses are never forwarded. No route here is on the heist's critical path;
+every service has a timeout and a fallback, so the game plays the same with all of them offline.
+
+### `GET /api/integrations/status[?fresh=1]`
+
+One entry per external service in `services`, all in the same shape:
+
+```json
+{
+  "services": {
+    "wajo":   { "state": "live", "latency_ms": 212.4, "detail": "key accepted by https://mcp.api.wajo.ai/fo (read-only probe)",
+                "code": "LIVE", "label": "Wajo AI voice alert", "fallback": "escalation recorded as a dry run in the Wajo audit log" },
+    "ollama": { "state": "offline", "latency_ms": 1501.0, "detail": "http://localhost:11434 not answering (unreachable: ConnectTimeout)",
+                "code": "UNREACHABLE", "label": "Ollama", "fallback": "canned offline agent lines" }
+  },
+  "generated_at": "2026-10-24T03:12:55Z", "probe_ms": 1830.2, "cached": false,
+  "providers": { "anthropic": "LIVE" }, "latency_ms": { "anthropic": 250.1 }, "detail": { "anthropic": "..." }, "live_mode": false
+}
+```
+
+- `state` is one of `live`, `offline`, `missing_key`, `unverified`, `local`, `dry_run` (see `IntegrationState`). Show an
+  **offline** badge for `offline` and `missing_key` (and `dry_run` for Wajo), and the `fallback` text as the tooltip.
+- Service ids: `claude, ollama, wajo, cartesia, gemini, cloud_vision, openai, moss, bitdeer, crs, x402, cdp, basescan,
+  factory, apify, brightdata, fetchai, spacetimedb, webauthn, z3, heistguard, osint_public`.
+- Every probe is read-only (list/metadata endpoints, public RPC reads, in-process imports), bounded at 3 s, and all run
+  concurrently. Results are cached for 15 s (keyed on the configured env); `?fresh=1` re-probes.
+- `providers` / `latency_ms` / `detail` / `live_mode` are the legacy fields of the pre-3D UI and are unchanged.
+
+### `GET /api/integrations/wajo/status[?fresh=1]`
+
+`WajoStatusResponse`. `state` is `live` (key accepted by Fo's read-only `list_fo_conversations`), `offline` (probe failed or
+timed out), `missing_key` (no `WAJO_API_KEY`) or `dry_run` (key accepted but no `CFO_ALERT_PHONE_NUMBER`, or `WAJO_DRY_RUN=1`).
+`last_request_summary` / `last_response_summary` describe the most recent Wajo request (probe or escalation). Cached 20 s.
+
+```json
+{ "state": "live", "latency_ms": 208.7, "detail": "key accepted by https://mcp.api.wajo.ai/fo (read-only probe)", "code": "LIVE",
+  "configured": { "api_key": true, "cfo_phone": true }, "cfo_phone_masked": "***0123", "timeout_s": 3, "cooldown_s": 300,
+  "checked_at": "2026-10-24T03:12:55.120Z",
+  "last_request_summary": "ask_fo: phone CFO ***0123 and text the settle link; $9,800.00 blocked, $25.00 held; settlement 0x3f9a1c2b7d",
+  "last_response_summary": "Fo accepted the call request (status=working)", "last_outcome": "live", "last_kind": "escalation",
+  "last_ts": "2026-10-24T03:12:40.002Z", "escalations_recorded": 1 }
+```
+
+### `GET /api/integrations/wajo/audit?limit=50`
+
+`WajoAuditResponse`: every escalation attempt this server process made, newest first (last 100 kept in memory).
+`outcome` is `live` (Fo accepted), `dry_run` (not configured / `WAJO_DRY_RUN` / tests), `cooldown` (a live call was placed
+less than `WAJO_MIN_CALL_INTERVAL_S` ago), `failure` (Wajo returned an error) or `timeout` (no answer within `WAJO_TIMEOUT_S`,
+default 3 s; the request may still have reached Fo).
+
+```json
+{ "entries": [ { "id": 2, "ts": "2026-10-24T03:13:02.511Z", "kind": "escalation", "outcome": "cooldown",
+                 "request_summary": "ask_fo: phone CFO ***0123 ...", "response_summary": "not sent: a live call was placed under 300s ago (WAJO_MIN_CALL_INTERVAL_S)",
+                 "latency_ms": 0.1 } ],
+  "count": 1, "max_kept": 100 }
+```
+
+The mock server (`node contracts/mock-server.js`) serves all three routes with plausible fake data (details end in `(mock)`).

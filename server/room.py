@@ -50,6 +50,10 @@ class Room:
             except asyncio.QueueFull:
                 pass  # slow client: drop rather than stall the room
 
+    @property
+    def client_count(self) -> int:
+        return len(self.clients)
+
     async def connect(self, ws: WebSocket) -> None:
         await ws.accept()
         q: asyncio.Queue = asyncio.Queue(maxsize=500)

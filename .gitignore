@@ -25,3 +25,5 @@ tests/e2e/screenshots/
 tests/e2e/artifacts/
 tests/perf/artifacts/
 tests/**/.contract-schema.json
+tests/parity/results/
+tests/parity/debug.log
